@@ -8,7 +8,7 @@ builder.Services.AddScoped<CarService>();
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
+builder.Services.AddScoped<UserService>();
 
 
 var app = builder.Build();

@@ -1,0 +1,220 @@
+﻿@page "/users"
+@using FleetBook.Models
+@using FleetBook.Services
+@rendermode InteractiveServer
+@inject UserService UserService
+
+<PageTitle>Użytkownicy</PageTitle>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Użytkownicy</h1>
+        <button class="btn btn-success" @onclick="AddNewUser">
+            + Dodaj nowego użytkownika
+        </button>
+    </div>
+
+    <EditUserModal @ref="EditModal" EditingUser="@SelectedUser" OnSave="@SaveUser" />
+
+    @if (users == null)
+    {
+        <p>Ładowanie...</p>
+    }
+    else
+    {
+        <!-- Desktop view -->
+        <div class="d-none d-lg-block">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("id"))">
+                            ID<span class="ms-2">@GetSortIndicator("id")</span>
+                        </th>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("imie"))">
+                            Imię<span class="ms-2">@GetSortIndicator("imie")</span>
+                        </th>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("nazwisko"))">
+                            Nazwisko<span class="ms-2">@GetSortIndicator("nazwisko")</span>
+                        </th>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("email"))">
+                            Email<span class="ms-2">@GetSortIndicator("email")</span>
+                        </th>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("numer"))">
+                            Numer telefonu<span class="ms-2">@GetSortIndicator("numer")</span>
+                        </th>
+                        <th style="cursor: pointer;" @onclick="@(() => SortByColumn("uprawniony"))">
+                            Uprawniony<span class="ms-2">@GetSortIndicator("uprawniony")</span>
+                        </th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.Id</td>
+                            <td>@user.Imie</td>
+                            <td>@user.Nazwisko</td>
+                            <td>@user.Email</td>
+                            <td>@user.NumerTelefonu</td>
+                            <td>
+                                <span class="badge @(user.Uprawniony ? "bg-success" : "bg-secondary")">
+                                    @(user.Uprawniony ? "Uprawniony" : "Nieuprawniony")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" @onclick="@(() => EditUser(user))">
+                                    Modyfikuj
+                                </button>
+                                <button class="btn btn-danger btn-sm" @onclick="@(() => DeleteUser(user.Id))">
+                                    Usuń
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile view -->
+        <div class="d-lg-none">
+            @foreach (var user in users)
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-6">
+                                <strong>Imię:</strong> @user.Imie
+                            </div>
+                            <div class="col-6">
+                                <strong>Nazwisko:</strong> @user.Nazwisko
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <strong>Email:</strong> @user.Email
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <strong>Telefon:</strong> @user.NumerTelefonu
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <strong>Status:</strong>
+                                <span class="badge @(user.Uprawniony ? "bg-success" : "bg-secondary")">
+                                    @(user.Uprawniony ? "Uprawniony" : "Nieuprawniony")
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-warning btn-sm flex-grow-1" @onclick="@(() => EditUser(user))">
+                                Modyfikuj
+                            </button>
+                            <button class="btn btn-danger btn-sm flex-grow-1" @onclick="@(() => DeleteUser(user.Id))">
+                                Usuń
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<User>? users;
+    private User? SelectedUser;
+    private EditUserModal? EditModal;
+    
+    private string currentSortColumn = "id";
+    private bool sortAscending = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await UserService.GetUsersSortedAsync(currentSortColumn, sortAscending);
+    }
+
+    private async Task SortByColumn(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            sortAscending = true;
+        }
+        await LoadUsers();
+    }
+
+    private string GetSortIndicator(string columnName)
+    {
+        if (currentSortColumn != columnName) return "";
+        return sortAscending ? " ▲" : " ▼";
+    }
+
+    private void EditUser(User user)
+    {
+        SelectedUser = new User 
+        { 
+            Id = user.Id,
+            Imie = user.Imie,
+            Nazwisko = user.Nazwisko,
+            Email = user.Email,
+            NumerTelefonu = user.NumerTelefonu,
+            Uprawniony = user.Uprawniony 
+        };
+        EditModal?.Open(isNew: false);
+    }
+
+    private void AddNewUser()
+    {
+        SelectedUser = new User 
+        { 
+            Imie = "",
+            Nazwisko = "",
+            Email = "",
+            NumerTelefonu = ""
+        };
+        EditModal?.Open(isNew: true);
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            if (SelectedUser != null)
+            {
+                if (SelectedUser.Id == 0)
+                {
+                    await UserService.AddUserAsync(SelectedUser);
+                }
+                else
+                {
+                    await UserService.UpdateUserAsync(SelectedUser);
+                }
+                await LoadUsers();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Błąd: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        await UserService.DeleteUserAsync(id);
+        await LoadUsers();
+        StateHasChanged();
+    }
+}
