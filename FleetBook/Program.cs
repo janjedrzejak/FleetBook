@@ -9,6 +9,7 @@ builder.Services.AddScoped<CarService>();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ReservationService>(); 
 
 
 var app = builder.Build();

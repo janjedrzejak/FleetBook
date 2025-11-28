@@ -3006,19 +3006,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Janek\\.nuget\\packages\\": {}
+    "/Users/janjedrzejak/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook\\FleetBook.csproj",
+      "projectUniqueName": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/FleetBook.csproj",
       "projectName": "FleetBook",
-      "projectPath": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook\\FleetBook.csproj",
-      "packagesPath": "C:\\Users\\Janek\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook\\obj\\",
+      "projectPath": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/FleetBook.csproj",
+      "packagesPath": "/Users/janjedrzejak/.nuget/packages/",
+      "outputPath": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Janek\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/janjedrzejak/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -3084,7 +3084,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
