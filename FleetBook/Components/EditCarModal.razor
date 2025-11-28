@@ -1,0 +1,75 @@
+@using FleetBook.Models
+@rendermode InteractiveServer
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(IsNewCar ? "Dodaj nowy samochód" : "Edytuj samochód")</h5>
+                <button type="button" class="btn-close" @onclick="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (EditingCar != null)
+                {
+                    <div class="form-group mb-3">
+                        <label>Marka</label>
+                        <input type="text" class="form-control" @bind="EditingCar.Marka" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Model</label>
+                        <input type="text" class="form-control" @bind="EditingCar.Model" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Rejestracja</label>
+                        <input type="text" class="form-control" @bind="EditingCar.Rejestracja" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>Rok</label>
+                        <input type="number" class="form-control" @bind="EditingCar.Rok" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label>
+                            <input type="checkbox" @bind="EditingCar.Dostepny" />
+                            Dostępny
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="Close">Anuluj</button>
+                <button type="button" class="btn btn-primary" @onclick="Save">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Car? EditingCar { get; set; }
+    
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+    
+    private string ModalDisplay = "none";
+    private string ModalClass = "";
+    private bool IsNewCar = false;
+    
+    public void Open(bool isNew = false)
+    {
+        IsNewCar = isNew;
+        ModalDisplay = "block";
+        ModalClass = "show";
+    }
+    
+    public void Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+    }
+    
+    private async Task Save()
+    {
+        await OnSave.InvokeAsync();
+        Close();
+    }
+}
