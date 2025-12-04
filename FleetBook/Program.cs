@@ -1,76 +1,46 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using FleetBook.API.Data;
-using FleetBook.API.Services;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.Authorization;
+using FleetBook.Services;
+using FleetBook.Components;
+using Blazored.LocalStorage;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=fleetbook.db"));
-builder.Services.AddScoped<IAuthService, AuthService>();  // ← Dodaj to
-builder.Services.AddScoped<CarService>();
-builder.Services.AddScoped<AuthService>();
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<ReservationService>(); 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"];
-var key = Encoding.ASCII.GetBytes(secretKey);
 
-builder.Services.AddAuthentication(options =>
+builder.Services.AddBlazoredLocalStorage();
+
+builder.Services.AddScoped(sp => new HttpClient
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
+    BaseAddress = new Uri("http://localhost:5056")
 });
 
-builder.Services.AddAuthorization();
+// Custom provider + rejestracja pod interfejsem
+builder.Services.AddScoped<CustomAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<CustomAuthenticationStateProvider>());
 
-// Register Auth Services (DODAJ)
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+// Autoryzacja + stan uwierzytelnienia jako kaskada
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState(); // ← DODAJ TO
+
+builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    DbInitializer.Initialize(context);
-}
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
 
+app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
 
 app.Run();

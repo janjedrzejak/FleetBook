@@ -4,6 +4,9 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
+@inject CustomAuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
 
 <div class="login-container">
     <div class="login-card">
@@ -160,6 +163,9 @@
 
         if (user != null)
         {
+            // poinformuj Blazora, że użytkownik jest zalogowany
+            AuthStateProvider.NotifyUserAuthentication(user.Email);
+
             NavigationManager.NavigateTo("/");
         }
         else
