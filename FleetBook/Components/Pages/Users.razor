@@ -58,9 +58,9 @@
                             <td>@user.Email</td>
                             <td>@user.NumerTelefonu</td>
                             <td>
-                                <span class="badge @(user.Uprawniony ? "bg-success" : "bg-secondary")">
-                                    @(user.Uprawniony ? "Uprawniony" : "Nieuprawniony")
-                                </span>
+                             <span class="badge @(user.Uprawniony == 1 ? "bg-success" : "bg-secondary")">
+                                @(user.Uprawniony == 1 ? "Uprawniony" : "Nieuprawniony")
+                            </span>
                             </td>
                             <td>
                                 <button class="btn btn-warning btn-sm" @onclick="@(() => EditUser(user))">
@@ -103,8 +103,8 @@
                         <div class="row mb-3">
                             <div class="col-12">
                                 <strong>Status:</strong>
-                                <span class="badge @(user.Uprawniony ? "bg-success" : "bg-secondary")">
-                                    @(user.Uprawniony ? "Uprawniony" : "Nieuprawniony")
+                                <span class="badge @(user.Uprawniony == 1 ? "bg-success" : "bg-secondary")">
+                                    @(user.Uprawniony == 1 ? "Uprawniony" : "Nieuprawniony")
                                 </span>
                             </div>
                         </div>

@@ -34,6 +34,10 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Auth/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BdXRoL0xvZ2luLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/EditCarModal.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9FZGl0Q2FyTW9kYWwucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
