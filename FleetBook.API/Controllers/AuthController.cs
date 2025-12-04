@@ -17,18 +17,19 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+public async Task<IActionResult> Login([FromBody] LoginRequest request)
+{
+    if (!ModelState.IsValid)
+        return BadRequest(ModelState);
 
-        var user = await _authService.LoginAsync(request.Email, request.Password);
+    var response = await _authService.LoginAsync(request.Email, request.Password);
 
-        if (user == null)
-            return Unauthorized(new { message = "Invalid email or password" });
+    if (response == null)
+        return Unauthorized(new { message = "Invalid email or password" });
 
-        return Ok(new { success = true, user });
-    }
+    return Ok(response);
+}
+
 
     [Authorize]
     [HttpPost("logout")]

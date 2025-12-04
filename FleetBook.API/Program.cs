@@ -1,69 +1,83 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using FleetBook.Models;
 using FleetBook.API.Data;
 using FleetBook.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace FleetBook.API;
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=fleetbook.db"));
-
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<AuthService>();
-
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? "your-super-secret-key-minimum-32-characters-long-change-this!!!";
-var key = Encoding.ASCII.GetBytes(secretKey);
-
-builder.Services.AddAuthentication(options =>
+public class Program
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    public static void Main(string[] args)
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
-    };
-});
+        var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAuthorization();
+        // DbContext
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlite("Data Source=fleetbook.db"));
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowBlazorClient", policy =>
-    {
-        policy.WithOrigins("https://localhost:7001")
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+        // Serwisy aplikacyjne
+        builder.Services.AddScoped<JwtTokenService>();
+        builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<CarService>();
+        builder.Services.AddScoped<UserService>();
+        builder.Services.AddScoped<ReservationService>();
 
-builder.Services.AddControllers();
+        // Ustawienia JWT
+        var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] ?? "your-super-secret-key-minimum-32-characters-long-change-this!!!";
+        var key = Encoding.ASCII.GetBytes(secretKey);
 
-var app = builder.Build();
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidateAudience = true,
+                ValidAudience = jwtSettings["Audience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
 
-app.UseCors("AllowBlazorClient");
-app.UseAuthentication();
-app.UseAuthorization();
+        builder.Services.AddAuthorization();
 
-app.MapControllers();
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFleetBookFrontend", policy =>
+            {
+                policy.WithOrigins("http://localhost:5132")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+            });
+        });
 
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    DbInitializer.Initialize(context);
+        builder.Services.AddControllers();
+
+        var app = builder.Build();
+
+        app.UseCors("AllowFleetBookFrontend");
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        // Seed bazy danych
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            DbInitializer.Initialize(context);
+        }
+
+        app.Run();
+    }
 }
-
-app.Run();

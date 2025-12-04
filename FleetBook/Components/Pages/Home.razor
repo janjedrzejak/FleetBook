@@ -1,15 +1,54 @@
 @page "/"
 @using Microsoft.AspNetCore.Components.Authorization
+@using FleetBook.Models
+@using FleetBook.Services
 @rendermode InteractiveServer
+@inject CarApiService CarApiService
 
 <div class="container mt-5">
     <h1>FleetBook</h1>
     <p>Witaj w systemie rezerwacji pojazdów!</p>
-    
+
     <AuthorizeView>
         <Authorized>
             <p>Zalogowany jako: <strong>@context.User.Identity?.Name</strong></p>
-            <a href="/logout" class="btn btn-danger">Wyloguj się</a>
+
+            @if (cars == null)
+            {
+                <p>Ładowanie listy samochodów...</p>
+            }
+            else if (cars.Count == 0)
+            {
+                <p>Brak samochodów w systemie.</p>
+            }
+            else
+            {
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Marka</th>
+                            <th>Model</th>
+                            <th>Rejestracja</th>
+                            <th>Rok</th>
+                            <th>Dostępny</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var car in cars)
+                    {
+                        <tr>
+                            <td>@car.Id</td>
+                            <td>@car.Marka</td>
+                            <td>@car.Model</td>
+                            <td>@car.Rejestracja</td>
+                            <td>@car.Rok</td>
+                            <td>@(car.Dostepny ? "Tak" : "Nie")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
         </Authorized>
         <NotAuthorized>
             <p>Aby korzystać z systemu, zaloguj się.</p>
@@ -19,4 +58,27 @@
 </div>
 
 @code {
+    private List<CarDto>? cars;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("🔍 Home.OnInitializedAsync started");
+        
+        var authState = await AuthStateTask;
+        Console.WriteLine($"🔍 IsAuthenticated: {authState.User.Identity?.IsAuthenticated}");
+        Console.WriteLine($"🔍 User: {authState.User.Identity?.Name}");
+
+        if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
+        {
+            Console.WriteLine("🔍 User not authenticated, returning early");
+            return;
+        }
+
+        Console.WriteLine("🔍 Calling CarApiService.GetCarsAsync()");
+        cars = await CarApiService.GetCarsAsync();
+        Console.WriteLine($"🔍 Got {cars?.Count ?? 0} cars from API");
+    }
 }

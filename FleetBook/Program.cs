@@ -28,6 +28,14 @@ builder.Services.AddCascadingAuthenticationState(); // ← DODAJ TO
 
 builder.Services.AddScoped<AuthService>();
 
+builder.Services.AddSingleton<CustomAuthenticationStateProvider>();
+builder.Services.AddSingleton<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<CustomAuthenticationStateProvider>());
+
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CarApiService>(); // ← DODAJ TO
+
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())

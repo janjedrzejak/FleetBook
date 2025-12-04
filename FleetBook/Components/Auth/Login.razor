@@ -163,10 +163,14 @@
 
         if (user != null)
         {
-            // poinformuj Blazora, że użytkownik jest zalogowany
+            // 🔹 DEBUG: sprawdź czy token się zapisał
+            var token = await AuthService.GetAccessTokenAsync();
+            Console.WriteLine($"🔍 Login: token after login = {(string.IsNullOrWhiteSpace(token) ? "EMPTY" : token.Substring(0, 20) + "...")}");
+
             AuthStateProvider.NotifyUserAuthentication(user.Email);
 
-            NavigationManager.NavigateTo("/");
+            await Task.Delay(500);
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
         else
         {
@@ -180,5 +184,7 @@
 
     isLoading = false;
 }
+
+
 
 }

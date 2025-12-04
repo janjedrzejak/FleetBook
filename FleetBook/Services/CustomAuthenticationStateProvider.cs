@@ -9,16 +9,17 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        // Domyślnie niezalogowany użytkownik
         return Task.FromResult(new AuthenticationState(_currentUser));
     }
 
     public void NotifyUserAuthentication(string email)
     {
+        // 🔹 WAŻNE: AuthenticationType MUSI być ustawiony (nie null), żeby IsAuthenticated był true
         var identity = new ClaimsIdentity(new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, email),
             new Claim(ClaimTypes.Name, email),
-        }, "custom");
+        }, "jwt");  // ← "jwt" zamiast "custom", ale każda string działa jeśli nie jest null
 
         _currentUser = new ClaimsPrincipal(identity);
 
