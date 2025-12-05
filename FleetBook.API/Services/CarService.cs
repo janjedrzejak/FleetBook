@@ -7,10 +7,14 @@ namespace FleetBook.Services;
 public class CarService
 {
     private readonly ApplicationDbContext _db;
+    
     public CarService(ApplicationDbContext db) => _db = db;
 
     public async Task<List<Car>> GetCarsAsync()
         => await _db.Cars.ToListAsync();
+    
+    public async Task<Car?> GetCarByIdAsync(int id)
+        => await _db.Cars.FindAsync(id);
     
     public async Task DeleteCarAsync(int id)
     {

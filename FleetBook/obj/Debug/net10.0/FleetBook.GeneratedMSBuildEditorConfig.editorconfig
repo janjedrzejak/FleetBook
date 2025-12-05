@@ -11,77 +11,77 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = FleetBook
 build_property.RootNamespace = FleetBook
-build_property.ProjectDir = /Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/
+build_property.ProjectDir = C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = /Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook
+build_property.MSBuildProjectDirectory = C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/App.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BcHAucmF6b3I=
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/App.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Auth/Login.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9BdXRoL0xvZ2luLnJhem9y
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Auth/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBdXRoXExvZ2luLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/EditCarModal.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9FZGl0Q2FyTW9kYWwucmF6b3I=
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/EditCarModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xFZGl0Q2FyTW9kYWwucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/EditUserModal.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9FZGl0VXNlck1vZGFsLnJhem9y
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/EditUserModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xFZGl0VXNlck1vZGFsLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/NewReservationModal.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9OZXdSZXNlcnZhdGlvbk1vZGFsLnJhem9y
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/NewReservationModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xOZXdSZXNlcnZhdGlvbk1vZGFsLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/Error.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9FcnJvci5yYXpvcg==
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/Error.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/Home.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ib21lLnJhem9y
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/NotFound.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Ob3RGb3VuZC5yYXpvcg==
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/NotFound.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xOb3RGb3VuZC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/Reservations.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9SZXNlcnZhdGlvbnMucmF6b3I=
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/Reservations.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xSZXNlcnZhdGlvbnMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/Users.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9Vc2Vycy5yYXpvcg==
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/Users.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xVc2Vycy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Pages/Weather.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9QYWdlcy9XZWF0aGVyLnJhem9y
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xXZWF0aGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Routes.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9Sb3V0ZXMucmF6b3I=
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/_Imports.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9fSW1wb3J0cy5yYXpvcg==
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Layout/MainLayout.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTWFpbkxheW91dC5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = b-i786hel1dc
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-mmnzp1vklo
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Layout/NavMenu.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvTmF2TWVudS5yYXpvcg==
-build_metadata.AdditionalFiles.CssScope = b-2xj1jb6lw4
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTmF2TWVudS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-srv1jv7zzl
 
-[/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/Components/Layout/ReconnectModal.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9MYXlvdXQvUmVjb25uZWN0TW9kYWwucmF6b3I=
-build_metadata.AdditionalFiles.CssScope = b-v7yqkvncr8
+[C:/Users/Janek/OneDrive/Dokumenty/GitHub/FleetBook/FleetBook/Components/Layout/ReconnectModal.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcUmVjb25uZWN0TW9kYWwucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-07l6zu1dg9

@@ -4,6 +4,8 @@
 @using FleetBook.Services
 @rendermode InteractiveServer
 @inject CarApiService CarApiService
+@inject IJSRuntime JS
+
 
 <div class="container mt-5">
     <h1>FleetBook</h1>
@@ -12,6 +14,11 @@
     <AuthorizeView>
         <Authorized>
             <p>Zalogowany jako: <strong>@context.User.Identity?.Name</strong></p>
+
+            <!-- Button to add new car -->
+            <button class="btn btn-success mb-3" @onclick="OpenAddModal">
+                <i class="bi bi-plus-circle"></i> Dodaj samochód
+            </button>
 
             @if (cars == null)
             {
@@ -32,6 +39,7 @@
                             <th>Rejestracja</th>
                             <th>Rok</th>
                             <th>Dostępny</th>
+                            <th>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,7 +51,19 @@
                             <td>@car.Model</td>
                             <td>@car.Rejestracja</td>
                             <td>@car.Rok</td>
-                            <td>@(car.Dostepny ? "Tak" : "Nie")</td>
+                            <td>
+                                <span class="badge @(car.Dostepny ? "bg-success" : "bg-danger")">
+                                    @(car.Dostepny ? "Dostępny" : "Niedostępny")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(car)">
+                                    Edytuj
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(car.Id)">
+                                    Usuń
+                                </button>
+                            </td>
                         </tr>
                     }
                     </tbody>
@@ -57,8 +77,99 @@
     </AuthorizeView>
 </div>
 
+<!-- Add/Edit Modal -->
+<div class="modal @(showCarModal ? "show" : "")" id="carModal" tabindex="-1" style="@(showCarModal ? "display: block;" : "display: none;")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(isEditMode ? "Edytuj samochód" : "Dodaj nowy samochód")</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="marka" class="form-label">Marka</label>
+                        <input type="text" class="form-control" id="marka" @bind="formCar.Marka" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Model</label>
+                        <input type="text" class="form-control" id="model" @bind="formCar.Model" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="rejestracja" class="form-label">Rejestracja</label>
+                        <input type="text" class="form-control" id="rejestracja" @bind="formCar.Rejestracja" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="rok" class="form-label">Rok produkcji</label>
+                        <input type="number" class="form-control" id="rok" @bind="formCar.Rok" required />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="dostepny" @bind="formCar.Dostepny" />
+                        <label class="form-check-label" for="dostepny">
+                            Dostępny
+                        </label>
+                    </div>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anuluj</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveCar" disabled="@isLoading">
+                    @(isLoading ? "Zapisywanie..." : "Zapisz")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal backdrop -->
+@if (showCarModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal @(showDeleteModal ? "show" : "")" id="deleteModal" tabindex="-1" style="@(showDeleteModal ? "display: block;" : "display: none;")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Potwierdzenie usunięcia</h5>
+                <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Czy na pewno chcesz usunąć ten samochód?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Anuluj</button>
+                <button type="button" class="btn btn-danger" @onclick="DeleteCar" disabled="@isLoading">
+                    @(isLoading ? "Usuwanie..." : "Usuń")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal backdrop for delete -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+
 @code {
     private List<CarDto>? cars;
+    private CarDto formCar = new();
+    private int deleteCarId;
+    private bool isEditMode;
+    private bool isLoading;
+    private string errorMessage = "";
+    private bool showCarModal;
+    private bool showDeleteModal;
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
@@ -81,4 +192,208 @@
         cars = await CarApiService.GetCarsAsync();
         Console.WriteLine($"🔍 Got {cars?.Count ?? 0} cars from API");
     }
+
+    private async Task OpenAddModal()
+    {
+        isEditMode = false;
+        formCar = new CarDto();
+        errorMessage = "";
+        showCarModal = true;
+        StateHasChanged();
+    }
+
+    private async Task OpenEditModal(CarDto car)
+    {
+        isEditMode = true;
+        formCar = new CarDto
+        {
+            Id = car.Id,
+            Marka = car.Marka,
+            Model = car.Model,
+            Rejestracja = car.Rejestracja,
+            Rok = car.Rok,
+            Dostepny = car.Dostepny
+        };
+        errorMessage = "";
+        showCarModal = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveCar()
+    {
+        if (string.IsNullOrWhiteSpace(formCar.Marka) || string.IsNullOrWhiteSpace(formCar.Model))
+        {
+            errorMessage = "Marka i model są wymagane!";
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await CarApiService.UpdateCarAsync(formCar.Id, formCar);
+            }
+            else
+            {
+                success = await CarApiService.AddCarAsync(formCar);
+            }
+
+            if (success)
+            {
+                cars = await CarApiService.GetCarsAsync();
+                await CloseModal();
+                errorMessage = "";
+            }
+            else
+            {
+                errorMessage = "Błąd podczas zapisywania samochodu!";
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ConfirmDelete(int id)
+    {
+        deleteCarId = id;
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task DeleteCar()
+    {
+        isLoading = true;
+        try
+        {
+            var success = await CarApiService.DeleteCarAsync(deleteCarId);
+            if (success)
+            {
+                cars = await CarApiService.GetCarsAsync();
+                await CloseDeleteModal();
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        showCarModal = false;
+        formCar = new();
+        errorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        deleteCarId = 0;
+        StateHasChanged();
+    }
 }
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1050;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        outline: 0;
+    }
+
+    .modal.show {
+        overflow-y: auto;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1040;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000;
+    }
+
+    .modal-backdrop.show {
+        opacity: 0.5;
+    }
+
+    .modal-dialog {
+        position: relative;
+        width: auto;
+        margin: 1.75rem auto;
+    }
+
+    .modal-content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 0.3rem;
+        outline: 0;
+    }
+
+    .modal-header {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-title {
+        margin-bottom: 0;
+        line-height: 1.5;
+        font-size: 1.25rem;
+        font-weight: 500;
+    }
+
+    .modal-body {
+        position: relative;
+        flex: 1 1 auto;
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        box-sizing: content-box;
+        width: 1em;
+        height: 1em;
+        padding: 0.25em 0.25em;
+        color: #000;
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center / 1em auto no-repeat;
+        border: 0;
+        border-radius: 0.3rem;
+        opacity: 0.5;
+        cursor: pointer;
+    }
+
+    .btn-close:hover {
+        opacity: 0.75;
+    }
+</style>
