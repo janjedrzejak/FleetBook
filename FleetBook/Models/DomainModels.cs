@@ -19,3 +19,9 @@ public class UserDto
     public string NumerTelefonu { get; set; } = "";
     public int Uprawniony { get; set; }
 }
+
+public class RoleDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}

@@ -7,6 +7,7 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
+
 <div class="container mt-5">
     <h1>👥 Zarządzanie Użytkownikami</h1>
     <p>Administrator - Panel zarządzania użytkownikami systemu</p>
@@ -35,6 +36,7 @@
                     <th>Email</th>
                     <th>Tel</th>
                     <th>Uprawniony</th>
+                    <th>Role</th>
                     <th>Akcje</th>
                 </tr>
             </thead>
@@ -53,6 +55,15 @@
                         </span>
                     </td>
                     <td>
+                        @if (userRoles.ContainsKey(user.Id))
+                        {
+                            @foreach (var role in userRoles[user.Id])
+                            {
+                                <span class="badge bg-info">@role.Name</span>
+                            }
+                        }
+                    </td>
+                    <td>
                         <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(user)">
                             Edytuj
                         </button>
@@ -69,7 +80,7 @@
 
 <!-- Add/Edit Modal -->
 <div class="modal @(showUserModal ? "show" : "")" id="userModal" tabindex="-1" style="@(showUserModal ? "display: block;" : "display: none;")">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">@(isEditMode ? "Edytuj użytkownika" : "Dodaj nowego użytkownika")</h5>
@@ -99,6 +110,28 @@
                             Uprawniony do wypożyczeń
                         </label>
                     </div>
+
+                    <!-- Roles Section -->
+                    @if (isEditMode && availableRoles != null && availableRoles.Count > 0)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <div class="border p-3 rounded">
+                                @foreach (var role in availableRoles)
+                                {
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="role_@role.Id" 
+                                               @onchange="@((ChangeEventArgs e) => OnRoleChange(role.Id, (bool)e.Value!))" 
+                                               checked="@selectedRoleIds.Contains(role.Id)" />
+                                        <label class="form-check-label" for="role_@role.Id">
+                                            @role.Name
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
                         <div class="alert alert-danger" role="alert">
@@ -160,6 +193,11 @@
     private string errorMessage = "";
     private bool showUserModal;
     private bool showDeleteModal;
+    
+    // Role management
+    private List<RoleDto>? availableRoles;
+    private List<int> selectedRoleIds = new();
+    private Dictionary<int, List<RoleDto>> userRoles = new();
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
@@ -177,9 +215,20 @@
             return;
         }
 
-        Console.WriteLine("🔍 Calling UserApiService.GetUsersAsync()");
+        Console.WriteLine("🔍 Loading users and roles");
         users = await UserApiService.GetUsersAsync();
-        Console.WriteLine($"🔍 Got {users?.Count ?? 0} users from API");
+        availableRoles = await UserApiService.GetAllRolesAsync();
+        
+        // Load roles for each user
+        if (users != null)
+        {
+            foreach (var user in users)
+            {
+                userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+            }
+        }
+        
+        Console.WriteLine($"🔍 Got {users?.Count ?? 0} users and {availableRoles?.Count ?? 0} roles");
     }
 
     private async Task OpenAddModal()
@@ -187,6 +236,7 @@
         isEditMode = false;
         formUser = new UserDto();
         isUprawniony = false;
+        selectedRoleIds.Clear();
         errorMessage = "";
         showUserModal = true;
         StateHasChanged();
@@ -205,9 +255,31 @@
             Uprawniony = user.Uprawniony
         };
         isUprawniony = user.Uprawniony == 1;
+        
+        // Load user roles
+        selectedRoleIds.Clear();
+        var roles = await UserApiService.GetUserRolesAsync(user.Id);
+        foreach (var role in roles)
+        {
+            selectedRoleIds.Add(role.Id);
+        }
+        
         errorMessage = "";
         showUserModal = true;
         StateHasChanged();
+    }
+
+    private void OnRoleChange(int roleId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!selectedRoleIds.Contains(roleId))
+                selectedRoleIds.Add(roleId);
+        }
+        else
+        {
+            selectedRoleIds.Remove(roleId);
+        }
     }
 
     private async Task SaveUser()
@@ -227,6 +299,12 @@
             if (isEditMode)
             {
                 success = await UserApiService.UpdateUserAsync(formUser.Id, formUser);
+                
+                // Update roles if edited
+                if (success && availableRoles != null && availableRoles.Count > 0)
+                {
+                    success = await UserApiService.UpdateUserRolesAsync(formUser.Id, selectedRoleIds);
+                }
             }
             else
             {
@@ -236,6 +314,17 @@
             if (success)
             {
                 users = await UserApiService.GetUsersAsync();
+                
+                // Reload all user roles
+                if (users != null)
+                {
+                    userRoles.Clear();
+                    foreach (var user in users)
+                    {
+                        userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                    }
+                }
+                
                 await CloseModal();
                 errorMessage = "";
             }
@@ -266,6 +355,7 @@
             if (success)
             {
                 users = await UserApiService.GetUsersAsync();
+                userRoles.Remove(deleteUserId);
                 await CloseDeleteModal();
             }
         }
@@ -280,6 +370,7 @@
         showUserModal = false;
         formUser = new();
         isUprawniony = false;
+        selectedRoleIds.Clear();
         errorMessage = "";
         StateHasChanged();
     }

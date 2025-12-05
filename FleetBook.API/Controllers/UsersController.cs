@@ -118,4 +118,103 @@ public class UsersController : ControllerBase
         await _userService.DeleteUserAsync(id);
         return NoContent();
     }
+
+    /// <summary>
+    /// Get all roles for a user
+    /// </summary>
+    [HttpGet("{id}/roles")]
+    public async Task<ActionResult<List<Role>>> GetUserRoles(int id)
+    {
+        _logger.LogInformation($"👥 GET api/users/{id}/roles called");
+        
+        var user = await _userService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { message = "User not found" });
+        }
+
+        var roles = await _userService.GetUserRolesAsync(id);
+        return Ok(roles);
+    }
+
+    /// <summary>
+    /// Update user roles (replaces all roles)
+    /// </summary>
+    [HttpPut("{id}/roles")]
+    public async Task<ActionResult> UpdateUserRoles(int id, [FromBody] List<int> roleIds)
+    {
+        _logger.LogInformation($"👥 PUT api/users/{id}/roles called - Updating {roleIds.Count} roles");
+
+        try
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            await _userService.UpdateUserRolesAsync(id, roleIds);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError($"👥 Error updating roles: {ex.Message}");
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Assign a single role to a user
+    /// </summary>
+    [HttpPost("{id}/roles/{roleId}")]
+    public async Task<ActionResult> AssignRole(int id, int roleId)
+    {
+        _logger.LogInformation($"👥 POST api/users/{id}/roles/{roleId} called");
+
+        try
+        {
+            var user = await _userService.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            await _userService.AssignRoleAsync(id, roleId);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError($"👥 Error assigning role: {ex.Message}");
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Remove a role from a user
+    /// </summary>
+    [HttpDelete("{id}/roles/{roleId}")]
+    public async Task<ActionResult> RemoveRole(int id, int roleId)
+    {
+        _logger.LogInformation($"👥 DELETE api/users/{id}/roles/{roleId} called");
+
+        var user = await _userService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { message = "User not found" });
+        }
+
+        await _userService.RemoveRoleAsync(id, roleId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Get all available roles
+    /// </summary>
+    [HttpGet("_/roles")]
+    public async Task<ActionResult<List<Role>>> GetAllRoles()
+    {
+        _logger.LogInformation("👥 GET api/users/_/roles called");
+        var roles = await _userService.GetAllRolesAsync();
+        return Ok(roles);
+    }
 }

@@ -113,7 +113,6 @@ public class UserApiService
         {
             Console.WriteLine($"🔍 UserApiService: Calling PUT api/users/{id}");
             
-            // Wyślij placeholder PasswordHash (nie edytujemy haseł w CRUD)
             var userToUpdate = new
             {
                 user.Id,
@@ -122,7 +121,7 @@ public class UserApiService
                 user.Email,
                 user.NumerTelefonu,
                 user.Uprawniony,
-                PasswordHash = "placeholder_password" // Backend wymaga tego pola
+                PasswordHash = "placeholder_password"
             };
             
             var response = await _httpClient.PutAsJsonAsync($"api/users/{id}", userToUpdate);
@@ -167,6 +166,93 @@ public class UserApiService
         {
             Console.WriteLine($"🔍 UserApiService: Exception = {ex.Message}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Get all roles for a user
+    /// </summary>
+    public async Task<List<RoleDto>> GetUserRolesAsync(int userId)
+    {
+        await GetAuthTokenAsync();
+
+        try
+        {
+            Console.WriteLine($"🔍 UserApiService: Calling GET api/users/{userId}/roles");
+            var response = await _httpClient.GetAsync($"api/users/{userId}/roles");
+            Console.WriteLine($"🔍 UserApiService: Response status = {response.StatusCode}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"🔍 UserApiService: Error status = {response.StatusCode}");
+                return new List<RoleDto>();
+            }
+
+            var roles = await response.Content.ReadFromJsonAsync<List<RoleDto>>();
+            return roles ?? new List<RoleDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔍 UserApiService: Exception = {ex.Message}");
+            return new List<RoleDto>();
+        }
+    }
+
+    /// <summary>
+    /// Update user roles (replaces all roles)
+    /// </summary>
+    public async Task<bool> UpdateUserRolesAsync(int userId, List<int> roleIds)
+    {
+        await GetAuthTokenAsync();
+
+        try
+        {
+            Console.WriteLine($"🔍 UserApiService: Calling PUT api/users/{userId}/roles with {roleIds.Count} roles");
+            var response = await _httpClient.PutAsJsonAsync($"api/users/{userId}/roles", roleIds);
+            Console.WriteLine($"🔍 UserApiService: Response status = {response.StatusCode}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"🔍 UserApiService: Error content = {content}");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔍 UserApiService: Exception = {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get all available roles
+    /// </summary>
+    public async Task<List<RoleDto>> GetAllRolesAsync()
+    {
+        await GetAuthTokenAsync();
+
+        try
+        {
+            Console.WriteLine("🔍 UserApiService: Calling GET api/users/_/roles");
+            var response = await _httpClient.GetAsync("api/users/_/roles");
+            Console.WriteLine($"🔍 UserApiService: Response status = {response.StatusCode}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"🔍 UserApiService: Error status = {response.StatusCode}");
+                return new List<RoleDto>();
+            }
+
+            var roles = await response.Content.ReadFromJsonAsync<List<RoleDto>>();
+            return roles ?? new List<RoleDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔍 UserApiService: Exception = {ex.Message}");
+            return new List<RoleDto>();
         }
     }
 }
