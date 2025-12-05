@@ -1,6 +1,394 @@
 @page "/users"
+@using Microsoft.AspNetCore.Components.Authorization
+@using FleetBook.Models
+@using FleetBook.Services
+@rendermode InteractiveServer
+@inject UserApiService UserApiService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <div class="container mt-5">
-    <h2>Użytkownicy</h2>
-    <p>Dostępne wkrótce...</p>
+    <h1>👥 Zarządzanie Użytkownikami</h1>
+    <p>Administrator - Panel zarządzania użytkownikami systemu</p>
+
+    <!-- Button to add new user -->
+    <button class="btn btn-success mb-3" @onclick="OpenAddModal">
+        <i class="bi bi-plus-circle"></i> Dodaj użytkownika
+    </button>
+
+    @if (users == null)
+    {
+        <p>Ładowanie listy użytkowników...</p>
+    }
+    else if (users.Count == 0)
+    {
+        <p>Brak użytkowników w systemie.</p>
+    }
+    else
+    {
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    <th>Email</th>
+                    <th>Tel</th>
+                    <th>Uprawniony</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Imie</td>
+                    <td>@user.Nazwisko</td>
+                    <td>@user.Email</td>
+                    <td>@user.NumerTelefonu</td>
+                    <td>
+                        <span class="badge @(user.Uprawniony == 1 ? "bg-success" : "bg-warning")">
+                            @(user.Uprawniony == 1 ? "Tak" : "Nie")
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(user)">
+                            Edytuj
+                        </button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(user.Id)">
+                            Usuń
+                        </button>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
 </div>
+
+<!-- Add/Edit Modal -->
+<div class="modal @(showUserModal ? "show" : "")" id="userModal" tabindex="-1" style="@(showUserModal ? "display: block;" : "display: none;")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(isEditMode ? "Edytuj użytkownika" : "Dodaj nowego użytkownika")</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="imie" class="form-label">Imię</label>
+                        <input type="text" class="form-control" id="imie" @bind="formUser.Imie" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="nazwisko" class="form-label">Nazwisko</label>
+                        <input type="text" class="form-control" id="nazwisko" @bind="formUser.Nazwisko" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" @bind="formUser.Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefon" class="form-label">Nr telefonu</label>
+                        <input type="text" class="form-control" id="telefon" @bind="formUser.NumerTelefonu" />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="uprawniony" @bind="isUprawniony" />
+                        <label class="form-check-label" for="uprawniony">
+                            Uprawniony do wypożyczeń
+                        </label>
+                    </div>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anuluj</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveUser" disabled="@isLoading">
+                    @(isLoading ? "Zapisywanie..." : "Zapisz")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal backdrop -->
+@if (showUserModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal @(showDeleteModal ? "show" : "")" id="deleteModal" tabindex="-1" style="@(showDeleteModal ? "display: block;" : "display: none;")">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Potwierdzenie usunięcia</h5>
+                <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Czy na pewno chcesz usunąć tego użytkownika?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Anuluj</button>
+                <button type="button" class="btn btn-danger" @onclick="DeleteUser" disabled="@isLoading">
+                    @(isLoading ? "Usuwanie..." : "Usuń")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal backdrop for delete -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<UserDto>? users;
+    private UserDto formUser = new();
+    private int deleteUserId;
+    private bool isEditMode;
+    private bool isLoading;
+    private bool isUprawniony;
+    private string errorMessage = "";
+    private bool showUserModal;
+    private bool showDeleteModal;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("🔍 Users.OnInitializedAsync started");
+        
+        var authState = await AuthStateTask;
+        
+        if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
+        {
+            Console.WriteLine("🔍 User not authenticated, redirecting to /login");
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        Console.WriteLine("🔍 Calling UserApiService.GetUsersAsync()");
+        users = await UserApiService.GetUsersAsync();
+        Console.WriteLine($"🔍 Got {users?.Count ?? 0} users from API");
+    }
+
+    private async Task OpenAddModal()
+    {
+        isEditMode = false;
+        formUser = new UserDto();
+        isUprawniony = false;
+        errorMessage = "";
+        showUserModal = true;
+        StateHasChanged();
+    }
+
+    private async Task OpenEditModal(UserDto user)
+    {
+        isEditMode = true;
+        formUser = new UserDto
+        {
+            Id = user.Id,
+            Imie = user.Imie,
+            Nazwisko = user.Nazwisko,
+            Email = user.Email,
+            NumerTelefonu = user.NumerTelefonu,
+            Uprawniony = user.Uprawniony
+        };
+        isUprawniony = user.Uprawniony == 1;
+        errorMessage = "";
+        showUserModal = true;
+        StateHasChanged();
+    }
+
+    private async Task SaveUser()
+    {
+        if (string.IsNullOrWhiteSpace(formUser.Imie) || string.IsNullOrWhiteSpace(formUser.Email))
+        {
+            errorMessage = "Imię i email są wymagane!";
+            return;
+        }
+
+        formUser.Uprawniony = isUprawniony ? 1 : 0;
+        
+        isLoading = true;
+        try
+        {
+            bool success;
+            if (isEditMode)
+            {
+                success = await UserApiService.UpdateUserAsync(formUser.Id, formUser);
+            }
+            else
+            {
+                success = await UserApiService.AddUserAsync(formUser);
+            }
+
+            if (success)
+            {
+                users = await UserApiService.GetUsersAsync();
+                await CloseModal();
+                errorMessage = "";
+            }
+            else
+            {
+                errorMessage = "Błąd podczas zapisywania użytkownika!";
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ConfirmDelete(int id)
+    {
+        deleteUserId = id;
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task DeleteUser()
+    {
+        isLoading = true;
+        try
+        {
+            var success = await UserApiService.DeleteUserAsync(deleteUserId);
+            if (success)
+            {
+                users = await UserApiService.GetUsersAsync();
+                await CloseDeleteModal();
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        showUserModal = false;
+        formUser = new();
+        isUprawniony = false;
+        errorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        deleteUserId = 0;
+        StateHasChanged();
+    }
+}
+
+<style>
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1050;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        outline: 0;
+    }
+
+    .modal.show {
+        overflow-y: auto;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1040;
+        width: 100vw;
+        height: 100vh;
+        background-color: #000;
+    }
+
+    .modal-backdrop.show {
+        opacity: 0.5;
+    }
+
+    .modal-dialog {
+        position: relative;
+        width: auto;
+        margin: 1.75rem auto;
+    }
+
+    .modal-content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        pointer-events: auto;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 0.3rem;
+        outline: 0;
+    }
+
+    .modal-header {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-title {
+        margin-bottom: 0;
+        line-height: 1.5;
+        font-size: 1.25rem;
+        font-weight: 500;
+    }
+
+    .modal-body {
+        position: relative;
+        flex: 1 1 auto;
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        flex-wrap: wrap;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0.75rem;
+        border-top: 1px solid #dee2e6;
+        gap: 0.5rem;
+    }
+
+    .btn-close {
+        box-sizing: content-box;
+        width: 1em;
+        height: 1em;
+        padding: 0.25em 0.25em;
+        color: #000;
+        background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center / 1em auto no-repeat;
+        border: 0;
+        border-radius: 0.3rem;
+        opacity: 0.5;
+        cursor: pointer;
+    }
+
+    .btn-close:hover {
+        opacity: 0.75;
+    }
+}
+</style>

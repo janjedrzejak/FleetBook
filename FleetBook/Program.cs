@@ -34,7 +34,7 @@ builder.Services.AddSingleton<AuthenticationStateProvider>(sp =>
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CarApiService>(); // ← DODAJ TO
-
+builder.Services.AddScoped<UserApiService>();
 
 var app = builder.Build();
 
