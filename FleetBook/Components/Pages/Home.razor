@@ -5,14 +5,18 @@
 @rendermode InteractiveServer
 @inject CarApiService CarApiService
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 
-<div class="container mt-5">
-    <h1>FleetBook</h1>
-    <p>Witaj w systemie rezerwacji pojazdów!</p>
+<AuthorizeView>
+    <Authorizing>
+        <p>Sprawdzanie autoryzacji...</p>
+    </Authorizing>
+    <Authorized>
+        <div class="container mt-5">
+            <h1>FleetBook</h1>
+            <p>Witaj w systemie rezerwacji pojazdów!</p>
 
-    <AuthorizeView>
-        <Authorized>
             <p>Zalogowany jako: <strong>@context.User.Identity?.Name</strong></p>
 
             <!-- Button to add new car -->
@@ -69,96 +73,102 @@
                     </tbody>
                 </table>
             }
-        </Authorized>
-        <NotAuthorized>
-            <p>Aby korzystać z systemu, zaloguj się.</p>
-            <a href="/login" class="btn btn-primary">Przejdź do logowania</a>
-        </NotAuthorized>
-    </AuthorizeView>
-</div>
+        </div>
 
-<!-- Add/Edit Modal -->
-<div class="modal @(showCarModal ? "show" : "")" id="carModal" tabindex="-1" style="@(showCarModal ? "display: block;" : "display: none;")">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">@(isEditMode ? "Edytuj samochód" : "Dodaj nowy samochód")</h5>
-                <button type="button" class="btn-close" @onclick="CloseModal"></button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="mb-3">
-                        <label for="marka" class="form-label">Marka</label>
-                        <input type="text" class="form-control" id="marka" @bind="formCar.Marka" required />
+        <!-- Add/Edit Modal -->
+        <div class="modal @(showCarModal ? "show" : "")" id="carModal" tabindex="-1" style="@(showCarModal ? "display: block;" : "display: none;")">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(isEditMode ? "Edytuj samochód" : "Dodaj nowy samochód")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
                     </div>
-                    <div class="mb-3">
-                        <label for="model" class="form-label">Model</label>
-                        <input type="text" class="form-control" id="model" @bind="formCar.Model" required />
+                    <div class="modal-body">
+                        <form>
+                            <div class="mb-3">
+                                <label for="marka" class="form-label">Marka</label>
+                                <input type="text" class="form-control" id="marka" @bind="formCar.Marka" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="model" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="model" @bind="formCar.Model" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="rejestracja" class="form-label">Rejestracja</label>
+                                <input type="text" class="form-control" id="rejestracja" @bind="formCar.Rejestracja" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="rok" class="form-label">Rok produkcji</label>
+                                <input type="number" class="form-control" id="rok" @bind="formCar.Rok" required />
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="dostepny" @bind="formCar.Dostepny" />
+                                <label class="form-check-label" for="dostepny">
+                                    Dostępny
+                                </label>
+                            </div>
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    @errorMessage
+                                </div>
+                            }
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label for="rejestracja" class="form-label">Rejestracja</label>
-                        <input type="text" class="form-control" id="rejestracja" @bind="formCar.Rejestracja" required />
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anuluj</button>
+                        <button type="button" class="btn btn-primary" @onclick="SaveCar" disabled="@isLoading">
+                            @(isLoading ? "Zapisywanie..." : "Zapisz")
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label for="rok" class="form-label">Rok produkcji</label>
-                        <input type="number" class="form-control" id="rok" @bind="formCar.Rok" required />
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="dostepny" @bind="formCar.Dostepny" />
-                        <label class="form-check-label" for="dostepny">
-                            Dostępny
-                        </label>
-                    </div>
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger" role="alert">
-                            @errorMessage
-                        </div>
-                    }
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anuluj</button>
-                <button type="button" class="btn btn-primary" @onclick="SaveCar" disabled="@isLoading">
-                    @(isLoading ? "Zapisywanie..." : "Zapisz")
-                </button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal backdrop -->
-@if (showCarModal)
-{
-    <div class="modal-backdrop fade show"></div>
-}
+        <!-- Modal backdrop -->
+        @if (showCarModal)
+        {
+            <div class="modal-backdrop fade show"></div>
+        }
 
-<!-- Delete Confirmation Modal -->
-<div class="modal @(showDeleteModal ? "show" : "")" id="deleteModal" tabindex="-1" style="@(showDeleteModal ? "display: block;" : "display: none;")">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Potwierdzenie usunięcia</h5>
-                <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Czy na pewno chcesz usunąć ten samochód?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Anuluj</button>
-                <button type="button" class="btn btn-danger" @onclick="DeleteCar" disabled="@isLoading">
-                    @(isLoading ? "Usuwanie..." : "Usuń")
-                </button>
+        <!-- Delete Confirmation Modal -->
+        <div class="modal @(showDeleteModal ? "show" : "")" id="deleteModal" tabindex="-1" style="@(showDeleteModal ? "display: block;" : "display: none;")">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Potwierdzenie usunięcia</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Czy na pewno chcesz usunąć ten samochód?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Anuluj</button>
+                        <button type="button" class="btn btn-danger" @onclick="DeleteCar" disabled="@isLoading">
+                            @(isLoading ? "Usuwanie..." : "Usuń")
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal backdrop for delete -->
-@if (showDeleteModal)
-{
-    <div class="modal-backdrop fade show"></div>
-}
+        <!-- Modal backdrop for delete -->
+        @if (showDeleteModal)
+        {
+            <div class="modal-backdrop fade show"></div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 50vh;">
+            <div class="text-center">
+                <h1>FleetBook</h1>
+                <p>System zarządzania flotą pojazdów</p>
+                <p>Aby korzystać z systemu, zaloguj się.</p>
+                <a href="/login" class="btn btn-primary btn-lg">Przejdź do logowania</a>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
 
 
 @code {
@@ -175,23 +185,22 @@
     private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
+{
+    Console.WriteLine("🔍 Home.OnInitializedAsync started");
+    
+    var authState = await AuthStateTask;
+    
+    if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
     {
-        Console.WriteLine("🔍 Home.OnInitializedAsync started");
-        
-        var authState = await AuthStateTask;
-        Console.WriteLine($"🔍 IsAuthenticated: {authState.User.Identity?.IsAuthenticated}");
-        Console.WriteLine($"🔍 User: {authState.User.Identity?.Name}");
-
-        if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
-        {
-            Console.WriteLine("🔍 User not authenticated, returning early");
-            return;
-        }
-
-        Console.WriteLine("🔍 Calling CarApiService.GetCarsAsync()");
-        cars = await CarApiService.GetCarsAsync();
-        Console.WriteLine($"🔍 Got {cars?.Count ?? 0} cars from API");
+        Console.WriteLine("🔍 User not authenticated, redirecting to /login");
+        Navigation.NavigateTo("/login", forceLoad: true);
+        return;
     }
+
+    Console.WriteLine("🔍 Calling CarApiService.GetCarsAsync()");
+    cars = await CarApiService.GetCarsAsync();
+    Console.WriteLine($"🔍 Got {cars?.Count ?? 0} cars from API");
+}
 
     private async Task OpenAddModal()
     {
@@ -395,5 +404,17 @@
 
     .btn-close:hover {
         opacity: 0.75;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .justify-content-center {
+        justify-content: center;
+    }
+
+    .align-items-center {
+        align-items: center;
     }
 </style>
