@@ -57,10 +57,10 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new user (admin only - create user without password initially)
+    /// Create a new user with auto-generated password
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<User>> CreateUser([FromBody] User user)
+    public async Task<ActionResult> CreateUser([FromBody] User user)
     {
         _logger.LogInformation($"👥 POST api/users called - Creating user: {user.Imie} {user.Nazwisko}");
 
@@ -69,8 +69,23 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "Imie and Email are required" });
         }
 
+        // Generate temporary password
+        var temporaryPassword = GenerateRandomPassword();
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(temporaryPassword);
+
         await _userService.AddUserAsync(user);
-        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+        
+        // Return user data + temporary password to display to admin
+        return CreatedAtAction(nameof(GetUserById), 
+            new { id = user.Id }, 
+            new { 
+                user.Id,
+                user.Imie,
+                user.Nazwisko,
+                user.Email,
+                temporaryPassword = temporaryPassword,
+                message = "Użytkownik utworzony. Pokaż poniższe hasło użytkownikowi!"
+            });
     }
 
     /// <summary>
@@ -216,5 +231,40 @@ public class UsersController : ControllerBase
         _logger.LogInformation("👥 GET api/users/_/roles called");
         var roles = await _userService.GetAllRolesAsync();
         return Ok(roles);
+    }
+
+    /// <summary>
+    /// Generate a random temporary password
+    /// Format: 2 uppercase + 2 digits + 1 special char + 4 lowercase
+    /// Example: Ab12!defg
+    /// </summary>
+    private string GenerateRandomPassword(int length = 10)
+    {
+        const string uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
+        const string digitChars = "0123456789";
+        const string specialChars = "!@#$%^&*";
+
+        var random = new Random();
+        var password = new System.Text.StringBuilder();
+
+        // Add 2 uppercase letters
+        for (int i = 0; i < 2; i++)
+            password.Append(uppercaseChars[random.Next(uppercaseChars.Length)]);
+
+        // Add 2 digits
+        for (int i = 0; i < 2; i++)
+            password.Append(digitChars[random.Next(digitChars.Length)]);
+
+        // Add 1 special character
+        password.Append(specialChars[random.Next(specialChars.Length)]);
+
+        // Add 4 lowercase letters to fill remaining length
+        for (int i = 0; i < length - 5; i++)
+            password.Append(lowercaseChars[random.Next(lowercaseChars.Length)]);
+
+        // Shuffle password
+        var shuffled = password.ToString().OrderBy(c => random.Next()).ToArray();
+        return new string(shuffled);
     }
 }

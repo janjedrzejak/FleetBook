@@ -36,7 +36,7 @@
                     <th>Email</th>
                     <th>Tel</th>
                     <th>Uprawniony</th>
-                    <th>Role</th>
+                    <th>Rola</th>
                     <th>Akcje</th>
                 </tr>
             </thead>
@@ -55,12 +55,13 @@
                         </span>
                     </td>
                     <td>
-                        @if (userRoles.ContainsKey(user.Id))
+                        @if (userRoles.ContainsKey(user.Id) && userRoles[user.Id].Count > 0)
                         {
-                            @foreach (var role in userRoles[user.Id])
-                            {
-                                <span class="badge bg-info">@role.Name</span>
-                            }
+                            <span class="badge bg-info">@userRoles[user.Id][0].Name</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Brak</span>
                         }
                     </td>
                     <td>
@@ -111,18 +112,27 @@
                         </label>
                     </div>
 
-                    <!-- Roles Section -->
+                    <!-- Roles Section - Radio Buttons (Single Selection) -->
                     @if (isEditMode && availableRoles != null && availableRoles.Count > 0)
                     {
                         <div class="mb-3">
-                            <label class="form-label">Role</label>
+                            <label class="form-label">Rola</label>
                             <div class="border p-3 rounded">
+                                <div class="form-check mb-2">
+                                    <input type="radio" class="form-check-input" id="role_none" name="userRole"
+                                           @onchange="@((ChangeEventArgs e) => OnRoleChange(null))" 
+                                           checked="@(selectedRoleId == null)" />
+                                    <label class="form-check-label" for="role_none">
+                                        Brak roli
+                                    </label>
+                                </div>
+                                
                                 @foreach (var role in availableRoles)
                                 {
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="role_@role.Id" 
-                                               @onchange="@((ChangeEventArgs e) => OnRoleChange(role.Id, (bool)e.Value!))" 
-                                               checked="@selectedRoleIds.Contains(role.Id)" />
+                                    <div class="form-check mb-2">
+                                        <input type="radio" class="form-check-input" id="role_@role.Id" name="userRole"
+                                               @onchange="@((ChangeEventArgs e) => OnRoleChange(role.Id))" 
+                                               checked="@(selectedRoleId == role.Id)" />
                                         <label class="form-check-label" for="role_@role.Id">
                                             @role.Name
                                         </label>
@@ -152,6 +162,45 @@
 
 <!-- Modal backdrop -->
 @if (showUserModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Temporary Password Modal - Simple & Clean -->
+<div class="modal @(showPasswordModal ? "show" : "")" id="passwordModal" tabindex="-1" style="@(showPasswordModal ? "display: block;" : "display: none;")">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-success">
+            <div class="modal-header border-success">
+                <h5 class="modal-title">✅ Użytkownik utworzony</h5>
+                <button type="button" class="btn-close" @onclick="ClosePasswordModal"></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(newUserPassword))
+                {
+                    <p class="text-muted mb-3">Email: <strong>@newUserEmail</strong></p>
+                    
+                    <label class="form-label">Hasło tymczasowe:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control font-monospace fw-bold" id="passwordInput" value="@newUserPassword" readonly />
+                        <button class="btn btn-outline-secondary" type="button" @onclick="CopyPassword" title="Kopiuj do schowka">
+                            📋
+                        </button>
+                    </div>
+                    
+                    <div class="alert alert-warning py-2 px-3 mb-0" role="alert">
+                        <small>⚠️ Pokaż hasło użytkownikowi. Nie będzie widoczne po zamknięciu.</small>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-success" @onclick="ClosePasswordModal">Gotowe</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal backdrop for password -->
+@if (showPasswordModal)
 {
     <div class="modal-backdrop fade show"></div>
 }
@@ -193,10 +242,15 @@
     private string errorMessage = "";
     private bool showUserModal;
     private bool showDeleteModal;
+    private bool showPasswordModal;
     
-    // Role management
+    // Password modal data
+    private string newUserPassword = "";
+    private string newUserEmail = "";
+    
+    // Role management - SINGLE ROLE
     private List<RoleDto>? availableRoles;
-    private List<int> selectedRoleIds = new();
+    private int? selectedRoleId;  // Single role instead of List<int>
     private Dictionary<int, List<RoleDto>> userRoles = new();
 
     [CascadingParameter]
@@ -236,7 +290,7 @@
         isEditMode = false;
         formUser = new UserDto();
         isUprawniony = false;
-        selectedRoleIds.Clear();
+        selectedRoleId = null;
         errorMessage = "";
         showUserModal = true;
         StateHasChanged();
@@ -256,12 +310,12 @@
         };
         isUprawniony = user.Uprawniony == 1;
         
-        // Load user roles
-        selectedRoleIds.Clear();
+        // Load user's single role
+        selectedRoleId = null;
         var roles = await UserApiService.GetUserRolesAsync(user.Id);
-        foreach (var role in roles)
+        if (roles.Any())
         {
-            selectedRoleIds.Add(role.Id);
+            selectedRoleId = roles.First().Id;
         }
         
         errorMessage = "";
@@ -269,17 +323,9 @@
         StateHasChanged();
     }
 
-    private void OnRoleChange(int roleId, bool isChecked)
+    private void OnRoleChange(int? roleId)
     {
-        if (isChecked)
-        {
-            if (!selectedRoleIds.Contains(roleId))
-                selectedRoleIds.Add(roleId);
-        }
-        else
-        {
-            selectedRoleIds.Remove(roleId);
-        }
+        selectedRoleId = roleId;
     }
 
     private async Task SaveUser()
@@ -295,48 +341,84 @@
         isLoading = true;
         try
         {
-            bool success;
             if (isEditMode)
             {
-                success = await UserApiService.UpdateUserAsync(formUser.Id, formUser);
+                // Edit mode
+                var success = await UserApiService.UpdateUserAsync(formUser.Id, formUser);
                 
-                // Update roles if edited
+                // Update role if edited (convert to List with single item or empty)
                 if (success && availableRoles != null && availableRoles.Count > 0)
                 {
-                    success = await UserApiService.UpdateUserRolesAsync(formUser.Id, selectedRoleIds);
+                    var roleIds = selectedRoleId.HasValue ? new List<int> { selectedRoleId.Value } : new List<int>();
+                    success = await UserApiService.UpdateUserRolesAsync(formUser.Id, roleIds);
                 }
-            }
-            else
-            {
-                success = await UserApiService.AddUserAsync(formUser);
-            }
 
-            if (success)
-            {
-                users = await UserApiService.GetUsersAsync();
-                
-                // Reload all user roles
-                if (users != null)
+                if (success)
                 {
-                    userRoles.Clear();
-                    foreach (var user in users)
+                    users = await UserApiService.GetUsersAsync();
+                    
+                    // Reload all user roles
+                    if (users != null)
                     {
-                        userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                        userRoles.Clear();
+                        foreach (var user in users)
+                        {
+                            userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                        }
                     }
+                    
+                    await CloseModal();
+                    errorMessage = "";
                 }
-                
-                await CloseModal();
-                errorMessage = "";
+                else
+                {
+                    errorMessage = "Błąd podczas zapisywania użytkownika!";
+                }
             }
             else
             {
-                errorMessage = "Błąd podczas zapisywania użytkownika!";
+                // Create mode - get response with password
+                var response = await UserApiService.AddUserAsync(formUser);
+                
+                if (response != null)
+                {
+                    // Show password modal
+                    newUserPassword = response.TemporaryPassword;
+                    newUserEmail = response.Email;
+                    showPasswordModal = true;
+                    
+                    // Reload users list
+                    users = await UserApiService.GetUsersAsync();
+                    
+                    // Reload all user roles
+                    if (users != null)
+                    {
+                        userRoles.Clear();
+                        foreach (var user in users)
+                        {
+                            userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                        }
+                    }
+                    
+                    await CloseModal();
+                    errorMessage = "";
+                }
+                else
+                {
+                    errorMessage = "Błąd podczas tworzenia użytkownika!";
+                }
             }
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private async Task CopyPassword()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", newUserPassword);
+        Console.WriteLine("🔍 Password copied to clipboard");
     }
 
     private async Task ConfirmDelete(int id)
@@ -370,8 +452,16 @@
         showUserModal = false;
         formUser = new();
         isUprawniony = false;
-        selectedRoleIds.Clear();
+        selectedRoleId = null;
         errorMessage = "";
+        StateHasChanged();
+    }
+
+    private async Task ClosePasswordModal()
+    {
+        showPasswordModal = false;
+        newUserPassword = "";
+        newUserEmail = "";
         StateHasChanged();
     }
 
@@ -384,6 +474,15 @@
 }
 
 <style>
+    .border-success {
+        border-color: #198754 !important;
+    }
+    
+    .font-monospace {
+        font-family: 'Courier New', monospace;
+        letter-spacing: 0.5px;
+    }
+    
     .modal {
         position: fixed;
         top: 0;
@@ -419,6 +518,10 @@
         margin: 1.75rem auto;
     }
 
+    .modal-sm {
+        max-width: 400px;
+    }
+
     .modal-content {
         position: relative;
         display: flex;
@@ -444,14 +547,14 @@
     .modal-title {
         margin-bottom: 0;
         line-height: 1.5;
-        font-size: 1.25rem;
-        font-weight: 500;
+        font-size: 1.1rem;
+        font-weight: 600;
     }
 
     .modal-body {
         position: relative;
         flex: 1 1 auto;
-        padding: 1rem;
+        padding: 1.5rem;
     }
 
     .modal-footer {
@@ -460,7 +563,7 @@
         flex-shrink: 0;
         align-items: center;
         justify-content: flex-end;
-        padding: 0.75rem;
+        padding: 1rem;
         border-top: 1px solid #dee2e6;
         gap: 0.5rem;
     }
@@ -481,5 +584,4 @@
     .btn-close:hover {
         opacity: 0.75;
     }
-}
 </style>

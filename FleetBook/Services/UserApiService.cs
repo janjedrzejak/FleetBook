@@ -4,6 +4,19 @@ using FleetBook.Models;
 
 namespace FleetBook.Services;
 
+/// <summary>
+/// Response from CreateUser endpoint containing temporary password
+/// </summary>
+public class CreateUserResponse
+{
+    public int Id { get; set; }
+    public string Imie { get; set; } = string.Empty;
+    public string Nazwisko { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string TemporaryPassword { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+}
+
 public class UserApiService
 {
     private readonly HttpClient _httpClient;
@@ -79,29 +92,46 @@ public class UserApiService
         }
     }
 
-    public async Task<bool> AddUserAsync(UserDto user)
+    /// <summary>
+    /// Add a new user - returns response with temporary password
+    /// </summary>
+    public async Task<CreateUserResponse?> AddUserAsync(UserDto user)
     {
         await GetAuthTokenAsync();
 
         try
         {
             Console.WriteLine($"🔍 UserApiService: Calling POST api/users");
-            var response = await _httpClient.PostAsJsonAsync("api/users", user);
+            
+            var userToCreate = new
+            {
+                user.Id,
+                user.Imie,
+                user.Nazwisko,
+                user.Email,
+                user.NumerTelefonu,
+                user.Uprawniony,
+                PasswordHash = "placeholder_password"
+            };
+            
+            var response = await _httpClient.PostAsJsonAsync("api/users", userToCreate);
             Console.WriteLine($"🔍 UserApiService: Response status = {response.StatusCode}");
 
             if (!response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"🔍 UserApiService: Error content = {content}");
-                return false;
+                return null;
             }
 
-            return true;
+            var createUserResponse = await response.Content.ReadFromJsonAsync<CreateUserResponse>();
+            Console.WriteLine($"🔍 UserApiService: User created with temporary password");
+            return createUserResponse;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"🔍 UserApiService: Exception = {ex.Message}");
-            return false;
+            return null;
         }
     }
 
