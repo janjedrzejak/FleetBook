@@ -46,5 +46,15 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.User).WithMany(u => u.RefreshTokens)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        modelBuilder.Entity<Reservation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Car).WithMany(c => c.Reservations);
+            entity.HasOne(e => e.User).WithMany(u => u.Reservations);
+            entity.HasOne(e => e.ApprovedByUser).WithMany()
+                .HasForeignKey(e => e.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
     }
 }

@@ -8,9 +8,11 @@ namespace FleetBook.Models
         public string Email { get; set; }
         public string NumerTelefonu { get; set; }
         public int Uprawniony { get; set; }
-        public string PasswordHash { get; set; }  // DODAJ tę linię
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;  // DODAJ
+        public string PasswordHash { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     }
 }

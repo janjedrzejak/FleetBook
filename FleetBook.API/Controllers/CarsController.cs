@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using FleetBook.API.Data;
 using FleetBook.Models;
 using FleetBook.Services;
+using FleetBook.API.Data; 
+using Microsoft.EntityFrameworkCore; 
 
 namespace FleetBook.API.Controllers;
 
@@ -11,12 +12,12 @@ namespace FleetBook.API.Controllers;
 [Authorize]
 public class CarsController : ControllerBase
 {
-    private readonly CarService _carService;
+    private readonly ApplicationDbContext _db;
     private readonly ILogger<CarsController> _logger;
 
-    public CarsController(CarService carService, ILogger<CarsController> logger)
+    public CarsController(ApplicationDbContext db, ILogger<CarsController> logger)
     {
-        _carService = carService;
+        _db = db;
         _logger = logger;
     }
 
@@ -27,7 +28,7 @@ public class CarsController : ControllerBase
     public async Task<ActionResult<List<Car>>> GetCars()
     {
         _logger.LogInformation("🚗 GET api/cars called");
-        var cars = await _carService.GetCarsAsync();
+        var cars = await _db.Cars.ToListAsync();
         return Ok(cars);
     }
 
@@ -38,67 +39,82 @@ public class CarsController : ControllerBase
     public async Task<ActionResult<Car>> GetCarById(int id)
     {
         _logger.LogInformation($"🚗 GET api/cars/{id} called");
-        var car = await _carService.GetCarByIdAsync(id);
+        var car = await _db.Cars.FindAsync(id);
         if (car == null)
         {
-            return NotFound(new { message = "Car not found" });
+            return NotFound(new { message = "Samochód nie znaleziony" });
         }
         return Ok(car);
     }
 
     /// <summary>
-    /// Get cars sorted by specified field
+    /// Get available cars for date range
     /// </summary>
-    [HttpGet("sorted/{sortBy}")]
-    public async Task<ActionResult<List<Car>>> GetCarsSorted(string sortBy, bool ascending = true)
+    [HttpGet("available")]
+    public async Task<ActionResult<List<Car>>> GetAvailableCars([FromQuery] DateTime dataOd, [FromQuery] DateTime dataDo)
     {
-        _logger.LogInformation($"🚗 GET api/cars/sorted/{sortBy}?ascending={ascending} called");
-        var cars = await _carService.GetCarsSortedAsync(sortBy, ascending);
-        return Ok(cars);
+        _logger.LogInformation($"🚗 GET api/cars/available from {dataOd} to {dataDo}");
+        
+        var availableCars = await _db.Cars
+            .Where(c => !_db.Reservations.Any(r =>
+                r.CarId == c.Id &&
+                r.Status == ReservationStatus.Approved &&
+                r.DataOd < dataDo &&
+                r.DataDo > dataOd))
+            .ToListAsync();
+
+        return Ok(availableCars);
     }
 
     /// <summary>
     /// Create a new car
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<Car>> CreateCar([FromBody] Car car)
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult> CreateCar([FromBody] Car car)
     {
         _logger.LogInformation($"🚗 POST api/cars called - Creating car: {car.Marka} {car.Model}");
-        
+
         if (string.IsNullOrWhiteSpace(car.Marka) || string.IsNullOrWhiteSpace(car.Model))
         {
-            return BadRequest(new { message = "Marka and Model are required" });
+            return BadRequest(new { message = "Marka i Model są wymagane" });
         }
 
-        await _carService.AddCarAsync(car);
+        _db.Cars.Add(car);
+        await _db.SaveChangesAsync();
+
         return CreatedAtAction(nameof(GetCarById), new { id = car.Id }, car);
     }
 
     /// <summary>
-    /// Update an existing car
+    /// Update a car
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> UpdateCar(int id, [FromBody] Car car)
     {
-        _logger.LogInformation($"🚗 PUT api/cars/{id} called - Updating car");
-        
+        _logger.LogInformation($"🚗 PUT api/cars/{id} called");
+
         if (id != car.Id)
         {
             return BadRequest(new { message = "ID mismatch" });
         }
 
-        if (string.IsNullOrWhiteSpace(car.Marka) || string.IsNullOrWhiteSpace(car.Model))
-        {
-            return BadRequest(new { message = "Marka and Model are required" });
-        }
-
-        var existingCar = await _carService.GetCarByIdAsync(id);
+        var existingCar = await _db.Cars.FindAsync(id);
         if (existingCar == null)
         {
-            return NotFound(new { message = "Car not found" });
+            return NotFound(new { message = "Samochód nie znaleziony" });
         }
 
-        await _carService.UpdateCarAsync(car);
+        existingCar.Marka = car.Marka;
+        existingCar.Model = car.Model;
+        existingCar.Rejestracja = car.Rejestracja;
+        existingCar.Rok = car.Rok;
+        existingCar.Dostepny = car.Dostepny;
+
+        _db.Cars.Update(existingCar);
+        await _db.SaveChangesAsync();
+
         return NoContent();
     }
 
@@ -106,17 +122,20 @@ public class CarsController : ControllerBase
     /// Delete a car
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteCar(int id)
     {
         _logger.LogInformation($"🚗 DELETE api/cars/{id} called");
-        
-        var car = await _carService.GetCarByIdAsync(id);
+
+        var car = await _db.Cars.FindAsync(id);
         if (car == null)
         {
-            return NotFound(new { message = "Car not found" });
+            return NotFound(new { message = "Samochód nie znaleziony" });
         }
 
-        await _carService.DeleteCarAsync(id);
+        _db.Cars.Remove(car);
+        await _db.SaveChangesAsync();
+
         return NoContent();
     }
 }

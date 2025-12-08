@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using FleetBook.API.Data;
 using FleetBook.Models;
 
+
 namespace FleetBook.Services;
+
 
 public class ReservationService
 {
@@ -13,13 +15,16 @@ public class ReservationService
         => await _db.Reservations
             .Include(r => r.Car)
             .Include(r => r.User)
+            .Include(r => r.ApprovedByUser)
             .ToListAsync();
+
 
     public async Task AddReservationAsync(Reservation reservation)
     {
         _db.Reservations.Add(reservation);
         await _db.SaveChangesAsync();
     }
+
 
     public async Task DeleteReservationAsync(int id)
     {
@@ -31,20 +36,31 @@ public class ReservationService
         }
     }
 
+
     public async Task UpdateReservationAsync(Reservation reservation)
     {
         var existing = await _db.Reservations.FindAsync(reservation.Id);
         if (existing != null)
         {
-            existing.DataZwrotu = reservation.DataZwrotu;
+            existing.DataDo = reservation.DataDo;
+            existing.Status = reservation.Status;
+            existing.NotatkiAkceptujacego = reservation.NotatkiAkceptujacego;
+            existing.ApprovedByUserId = reservation.ApprovedByUserId;
+            existing.ApprovedAt = reservation.ApprovedAt;
             await _db.SaveChangesAsync();
         }
     }
 
-    public async Task<List<Car>> GetAvailableCarsAsync()
+
+    public async Task<List<Car>> GetAvailableCarsAsync(DateTime dataOd, DateTime dataDo)
         => await _db.Cars
-            .Where(c => !_db.Reservations.Any(r => r.CarId == c.Id && r.DataZwrotu == null))
+            .Where(c => !_db.Reservations.Any(r => 
+                r.CarId == c.Id && 
+                r.Status == ReservationStatus.Approved &&
+                r.DataOd < dataDo && 
+                r.DataDo > dataOd))
             .ToListAsync();
+
 
     public async Task<List<User>> GetAuthorizedUsersAsync()
         => await _db.Users

@@ -24,17 +24,12 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 
 // Autoryzacja + stan uwierzytelnienia jako kaskada
 builder.Services.AddAuthorizationCore();
-builder.Services.AddCascadingAuthenticationState(); // ← DODAJ TO
 
+// API Services
 builder.Services.AddScoped<AuthService>();
-
-builder.Services.AddSingleton<CustomAuthenticationStateProvider>();
-builder.Services.AddSingleton<AuthenticationStateProvider>(sp =>
-    sp.GetRequiredService<CustomAuthenticationStateProvider>());
-
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<CarApiService>(); // ← DODAJ TO
+builder.Services.AddScoped<CarApiService>();
 builder.Services.AddScoped<UserApiService>();
+builder.Services.AddScoped<ReservationApiService>();
 
 var app = builder.Build();
 
