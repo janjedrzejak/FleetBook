@@ -4,6 +4,18 @@ using FleetBook.Models;
 
 namespace FleetBook.Services;
 
+public interface IUserApiService
+{
+    Task<List<UserDto>> GetUsersAsync();
+    Task<UserDto?> GetUserByIdAsync(int id);
+    Task<CreateUserResponse?> AddUserAsync(UserDto user);
+    Task<bool> UpdateUserAsync(int id, UserDto user);
+    Task<bool> DeleteUserAsync(int id);
+    Task<List<RoleDto>> GetUserRolesAsync(int userId);
+    Task<bool> UpdateUserRolesAsync(int userId, List<int> roleIds);
+    Task<List<RoleDto>> GetAllRolesAsync();
+}
+
 /// <summary>
 /// Response from CreateUser endpoint containing temporary password
 /// </summary>
@@ -17,7 +29,7 @@ public class CreateUserResponse
     public string Message { get; set; } = string.Empty;
 }
 
-public class UserApiService
+public class UserApiService : IUserApiService
 {
     private readonly HttpClient _httpClient;
     private readonly AuthService _authService;

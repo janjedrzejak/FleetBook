@@ -1,4 +1,18 @@
 html, body {
+    margin: 0;
+    padding: 0;
+}
+
+.page {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    padding-left: 0;
+    padding-right: 0;
+}
+html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -59,6 +73,6 @@ h1:focus {
     text-align: start;
 }
 
-
-
-
+.sidebar {
+    background-image: linear-gradient(180deg, rgb(0, 0, 0) 0%, #3a0647 70%);
+}

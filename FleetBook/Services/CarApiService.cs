@@ -5,7 +5,16 @@ using FleetBook.Models;
 
 namespace FleetBook.Services;
 
-public class CarApiService
+public interface ICarApiService
+{
+    Task<List<CarDto>> GetCarsAsync();
+    Task<CarDto?> GetCarByIdAsync(int id);
+    Task<bool> AddCarAsync(CarDto car);
+    Task<bool> UpdateCarAsync(int id, CarDto car);
+    Task<bool> DeleteCarAsync(int id);
+}
+
+public class CarApiService : ICarApiService
 {
     private readonly HttpClient _httpClient;
     private readonly AuthService _authService;

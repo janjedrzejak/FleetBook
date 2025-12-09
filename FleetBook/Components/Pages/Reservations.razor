@@ -1,6 +1,346 @@
 @page "/reservations"
+@using FleetBook.Models
+@inject IReservationApiService ReservationApi
+@inject ICarApiService CarApi
+@inject IUserApiService UserApi
+@inject AuthenticationStateProvider AuthStateProvider
 
+<div class="d-flex">
+        <div class="sidebar-left" style="width: 260px;"">
+            <NavMenu />
+        </div>
+
+<div class="flex-grow-1">
 <div class="container mt-5">
-    <h2>Rezerwacje</h2>
-    <p>Dostępne wkrótce...</p>
+<h1>Rezerwacje</h1>
+
+<div class="filters mb-3">
+    <EditForm Model="@_filterModel" OnValidSubmit="ApplyFiltersAsync">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label">Od</label>
+                <InputDate DateTime.ParseFormat="yyyy-MM-dd" class="form-control" @bind-Value="_filterModel.From" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Do</label>
+                <InputDate DateTime.ParseFormat="yyyy-MM-dd" class="form-control" @bind-Value="_filterModel.To" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Pojazd</label>
+                <InputSelect class="form-control" @bind-Value="_filterModel.CarId">
+                    <option value="">Wszystkie</option>
+                    @foreach (var car in _cars)
+                    {
+                        <option value="@car.Id">@car.Marka @car.Model (@car.Rejestracja)</option>
+                    }
+                </InputSelect>
+            </div>
+            @if (_isAdmin)
+            {
+                <div class="col-md-3">
+                    <label class="form-label">Użytkownik</label>
+                    <InputSelect class="form-control" @bind-Value="_filterModel.UserId">
+                        <option value="">Wszyscy</option>
+                        @foreach (var user in _users)
+                        {
+                            <option value="@user.Id">@user.Imie @user.Nazwisko (@user.Email)</option>
+                        }
+                    </InputSelect>
+                </div>
+            }
+        </div>
+        <div class="mt-2">
+            <button class="btn btn-primary me-2" type="submit">Filtruj</button>
+            <button class="btn btn-secondary" type="button" @onclick="ResetFilters">Wyczyść filtry</button>
+        </div>
+    </EditForm>
 </div>
+
+<div class="mb-3">
+    <button class="btn btn-success" @onclick="OpenNewReservationModal">
+        Nowa rezerwacja
+    </button>
+</div>
+
+@if (_isLoading)
+{
+    <p>Ładowanie...</p>
+}
+else if (_reservations.Count == 0)
+{
+    <p>Brak rezerwacji dla wybranych filtrów.</p>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead>
+        <tr>
+            <th>Pojazd</th>
+            <th>Użytkownik</th>
+            <th>Od</th>
+            <th>Do</th>
+            <th>Status</th>
+            <th>Akcje</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var r in _reservations)
+        {
+            <tr>
+                <td>@(r.Car is null ? r.CarId.ToString() : $"{r.Car.Marka} {r.Car.Model} ({r.Car.Rejestracja})")</td>
+                <td>@(r.User is null ? r.UserId.ToString() : $"{r.User.Imie} {r.User.Nazwisko}")</td>
+                <td>@r.DataOd.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@r.DataDo.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@GetStatusLabel(r.Status)</td>
+                <td>
+                    @* Akcje zależne od roli i statusu *@
+                    @if (CanEdit(r))
+                    {
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenEditReservationModal(r)">
+                            Edytuj
+                        </button>
+                    }
+                    @if (CanApprove(r))
+                    {
+                        <button class="btn btn-sm btn-outline-success me-1" @onclick="() => ApproveAsync(r)">
+                            Akceptuj
+                        </button>
+                    }
+                    @if (CanReject(r))
+                    {
+                        <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => RejectAsync(r)">
+                            Odrzuć
+                        </button>
+                    }
+                    @if (CanCancel(r))
+                    {
+                        <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => CancelAsync(r)">
+                            Anuluj
+                        </button>
+                    }
+                    @if (CanDelete(r))
+                    {
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(r)">
+                            Usuń
+                        </button>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+</div>
+</div>
+</div>
+
+<NewReservationModal 
+    @ref="_reservationModal"
+    Cars="_cars"
+    Users="_users"
+    IsAdmin="_isAdmin"
+    CurrentUserId="_currentUserId"
+    OnSaved="OnReservationSaved" />
+
+@code {
+    private readonly FilterModel _filterModel = new();
+    private List<ReservationDto> _reservations = new();
+    private List<CarDto> _cars = new();
+    private List<UserDto> _users = new();
+    private bool _isLoading;
+    private bool _isAdmin;
+    private int _currentUserId;
+    private bool _initialized = false;
+
+    private NewReservationModal? _reservationModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        _isAdmin = user.IsInRole("Admin");
+
+        // Dostosuj nazwę clamu z Id użytkownika
+        var userIdClaim = user.FindFirst("userId") ?? user.FindFirst("nameid");
+        if (userIdClaim is not null && int.TryParse(userIdClaim.Value, out var uid))
+        {
+            _currentUserId = uid;
+        }
+
+        // Domyślny zakres dat: ostatnie 30 dni
+        _filterModel.From = DateTime.Today.AddDays(-30);
+        _filterModel.To = DateTime.Today.AddDays(30);
+
+        // Wczytanie list samochodów i użytkowników
+        _cars = (await CarApi.GetCarsAsync()).ToList();
+        if (_isAdmin)
+        {
+            _users = (await UserApi.GetUsersAsync()).ToList();
+        }
+
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            // 👇 TUTAJ ŁADUJ REZERWACJE (po załadowaniu tokena)
+            await LoadReservationsAsync();
+        }
+    }
+
+    private async Task LoadReservationsAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        int? userIdFilter = _isAdmin ? _filterModel.UserId : _currentUserId;
+
+        _reservations = (await ReservationApi.GetReservationsAsync(
+            _filterModel.From,
+            _filterModel.To,
+            _filterModel.CarId,
+            userIdFilter)).ToList();
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        await LoadReservationsAsync();
+    }
+
+    private void ResetFilters()
+    {
+        _filterModel.From = DateTime.Today.AddDays(-30);
+        _filterModel.To = DateTime.Today.AddDays(30);
+        _filterModel.CarId = null;
+        _filterModel.UserId = null;
+
+        _ = LoadReservationsAsync();
+    }
+
+    private void OpenNewReservationModal()
+    {
+        _reservationModal?.Open(null);
+    }
+
+    private void OpenEditReservationModal(ReservationDto reservation)
+    {
+        _reservationModal?.Open(reservation);
+    }
+
+    private async Task ApproveAsync(ReservationDto reservation)
+    {
+        var request = new ApproveReservationRequest
+        {
+            Notatki = null
+        };
+
+        await ReservationApi.ApproveReservationAsync(reservation.Id, request);
+        await LoadReservationsAsync();
+    }
+
+    private async Task RejectAsync(ReservationDto reservation)
+    {
+        var request = new RejectReservationRequest
+        {
+            Powod = null
+        };
+
+        await ReservationApi.RejectReservationAsync(reservation.Id, request);
+        await LoadReservationsAsync();
+    }
+
+    private async Task CancelAsync(ReservationDto reservation)
+    {
+        await ReservationApi.CancelReservationAsync(reservation.Id);
+        await LoadReservationsAsync();
+    }
+
+    private async Task DeleteAsync(ReservationDto reservation)
+    {
+        await ReservationApi.DeleteReservationAsync(reservation.Id);
+        await LoadReservationsAsync();
+    }
+
+    private void OnReservationSaved(ReservationDto reservation)
+    {
+        _ = LoadReservationsAsync();
+    }
+
+    private bool CanEdit(ReservationDto r)
+    {
+        if (_isAdmin) return true;
+        return r.UserId == _currentUserId && r.Status == (int)ReservationStatus.Pending;
+    }
+
+    private bool CanApprove(ReservationDto r)
+    {
+        return _isAdmin && r.Status == (int)ReservationStatus.Pending;
+    }
+
+    private bool CanReject(ReservationDto r)
+    {
+        return _isAdmin && r.Status == (int)ReservationStatus.Pending;
+    }
+
+    private bool CanCancel(ReservationDto r)
+    {
+        if (!_isAdmin && r.UserId == _currentUserId &&
+            (r.Status == (int)ReservationStatus.Pending || r.Status == (int)ReservationStatus.Approved))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private bool CanDelete(ReservationDto r)
+    {
+        return _isAdmin;
+    }
+
+    private string GetStatusLabel(int status)
+    {
+        return status switch
+        {
+            0 => "Pending",
+            1 => "Approved",
+            2 => "Rejected",
+            3 => "Completed",
+            4 => "Cancelled",
+            _ => $"Status {status}"
+        };
+    }
+
+    private class FilterModel
+    {
+        public DateTime? From { get; set; }
+        public DateTime? To { get; set; }
+        public int? CarId { get; set; }
+        public int? UserId { get; set; }
+    }
+
+    private enum ReservationStatus
+    {
+        Pending = 0,
+        Approved = 1,
+        Rejected = 2,
+        Completed = 3,
+        Cancelled = 4
+    }
+}
+
+<style>
+    .sidebar-left {
+        background-image: linear-gradient(180deg, rgb(0, 0, 0) 0%, #3a0647 70%);
+        color: #fff;
+        min-height: 100vh;
+</style>

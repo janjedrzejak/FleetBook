@@ -3,161 +3,92 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using FleetBook.Models
 @using FleetBook.Services
-@inject CarApiService CarApiService
+@inject ICarApiService CarApiService
 @inject CustomAuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+
 
 <AuthorizeView>
     <Authorizing>
         <p>Sprawdzanie autoryzacji...</p>
     </Authorizing>
     <Authorized>
-        <div class="container mt-5">
-            <h1>FleetBook</h1>
-            <p>Witaj w systemie rezerwacji pojazdów!</p>
-
-            <p>Zalogowany jako: <strong>@context.User.Identity?.Name</strong></p>
-
-            <!-- Button to add new car -->
-            <button class="btn btn-success mb-3" @onclick="OpenAddModal">
-                <i class="bi bi-plus-circle"></i> Dodaj samochód
-            </button>
-
-            @if (cars == null)
-            {
-                <p>Ładowanie listy samochodów...</p>
-            }
-            else if (cars.Count == 0)
-            {
-                <p>Brak samochodów w systemie.</p>
-            }
-            else
-            {
-                <table class="table table-striped mt-3">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Marka</th>
-                            <th>Model</th>
-                            <th>Rejestracja</th>
-                            <th>Rok</th>
-                            <th>Dostępny</th>
-                            <th>Akcje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var car in cars)
-                    {
-                        <tr>
-                            <td>@car.Id</td>
-                            <td>@car.Marka</td>
-                            <td>@car.Model</td>
-                            <td>@car.Rejestracja</td>
-                            <td>@car.Rok</td>
-                            <td>
-                                <span class="badge @(car.Dostepny ? "bg-success" : "bg-danger")">
-                                    @(car.Dostepny ? "Dostępny" : "Niedostępny")
-                                </span>
-                            </td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(car)">
-                                    Edytuj
-                                </button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(car.Id)">
-                                    Usuń
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
+    <div class="d-flex">
+        <!-- LEWA KOLUMNA: MENU -->
+        <div class="sidebar-left" style="width: 260px;"">
+            <NavMenu />
         </div>
 
-        <!-- Add/Edit Modal -->
-        <div class="modal @(showCarModal ? "show" : "")" id="carModal" tabindex="-1" style="@(showCarModal ? "display: block;" : "display: none;")">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">@(isEditMode ? "Edytuj samochód" : "Dodaj nowy samochód")</h5>
-                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form>
-                            <div class="mb-3">
-                                <label for="marka" class="form-label">Marka</label>
-                                <input type="text" class="form-control" id="marka" @bind="formCar.Marka" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="model" class="form-label">Model</label>
-                                <input type="text" class="form-control" id="model" @bind="formCar.Model" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="rejestracja" class="form-label">Rejestracja</label>
-                                <input type="text" class="form-control" id="rejestracja" @bind="formCar.Rejestracja" required />
-                            </div>
-                            <div class="mb-3">
-                                <label for="rok" class="form-label">Rok produkcji</label>
-                                <input type="number" class="form-control" id="rok" @bind="formCar.Rok" required />
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="dostepny" @bind="formCar.Dostepny" />
-                                <label class="form-check-label" for="dostepny">
-                                    Dostępny
-                                </label>
-                            </div>
-                            @if (!string.IsNullOrEmpty(errorMessage))
-                            {
-                                <div class="alert alert-danger" role="alert">
-                                    @errorMessage
-                                </div>
-                            }
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Anuluj</button>
-                        <button type="button" class="btn btn-primary" @onclick="SaveCar" disabled="@isLoading">
-                            @(isLoading ? "Zapisywanie..." : "Zapisz")
-                        </button>
-                    </div>
-                </div>
+        <!-- PRAWA KOLUMNA: TREŚĆ STRONY -->
+        <div class="flex-grow-1">
+            <div class="container mt-5">
+                <h1>FleetBook</h1>
+                <p>Witaj w systemie rezerwacji pojazdów!</p>
+
+                <p>Zalogowany jako: <strong>@context.User.Identity?.Name</strong></p>
+
+
+                <button class="btn btn-success mb-3" @onclick="OpenAddModal">
+                    <i class="bi bi-plus-circle"></i> Dodaj samochód
+                </button>
+
+                @if (cars == null)
+                {
+                    <p>Ładowanie listy samochodów...</p>
+                }
+                else if (cars.Count == 0)
+                {
+                    <p>Brak samochodów w systemie.</p>
+                }
+                else
+                {
+                    <table class="table table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Marka</th>
+                                <th>Model</th>
+                                <th>Rejestracja</th>
+                                <th>Rok</th>
+                                <th>Dostępny</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var car in cars)
+                        {
+                            <tr>
+                                <td>@car.Id</td>
+                                <td>@car.Marka</td>
+                                <td>@car.Model</td>
+                                <td>@car.Rejestracja</td>
+                                <td>@car.Rok</td>
+                                <td>
+                                    <span class="badge @(car.Dostepny ? "bg-success" : "bg-danger")">
+                                        @(car.Dostepny ? "Dostępny" : "Niedostępny")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(car)">
+                                        Edytuj
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(car.Id)">
+                                        Usuń
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+
+                <!-- Modale zostają TAK JAK SĄ poniżej -->
+                @* Add/Edit Modal, Delete Modal, backdrop – nic nie zmieniaj *@
             </div>
         </div>
-
-        <!-- Modal backdrop -->
-        @if (showCarModal)
-        {
-            <div class="modal-backdrop fade show"></div>
-        }
-
-        <!-- Delete Confirmation Modal -->
-        <div class="modal @(showDeleteModal ? "show" : "")" id="deleteModal" tabindex="-1" style="@(showDeleteModal ? "display: block;" : "display: none;")">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Potwierdzenie usunięcia</h5>
-                        <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Czy na pewno chcesz usunąć ten samochód?</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Anuluj</button>
-                        <button type="button" class="btn btn-danger" @onclick="DeleteCar" disabled="@isLoading">
-                            @(isLoading ? "Usuwanie..." : "Usuń")
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal backdrop for delete -->
-        @if (showDeleteModal)
-        {
-            <div class="modal-backdrop fade show"></div>
-        }
-    </Authorized>
+    </div>
+</Authorized>
     <NotAuthorized>
         <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 50vh;">
             <div class="text-center">
@@ -318,6 +249,24 @@
         deleteCarId = 0;
         StateHasChanged();
     }
+
+
+    private async Task Logout()
+{
+    Console.WriteLine("🔍 Home.Logout CLICKED");
+
+    try
+    {
+        await AuthStateProvider.NotifyUserLogoutAsync();
+        Console.WriteLine("🔍 Home.Logout: NotifyUserLogoutAsync DONE");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"🔍 Home.LOGOUT ERROR: {ex.Message}");
+    }
+
+    Navigation.NavigateTo("/login", forceLoad: true);
+}
 }
 
 <style>
@@ -430,4 +379,9 @@
     .align-items-center {
         align-items: center;
     }
+    .sidebar-left {
+    background-image: linear-gradient(180deg, rgb(0, 0, 0) 0%, #3a0647 70%);
+    color: #fff;
+    min-height: 100vh;
+}
 </style>

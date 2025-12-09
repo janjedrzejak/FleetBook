@@ -12,10 +12,21 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddBlazoredLocalStorage();
 
-builder.Services.AddScoped(sp => new HttpClient
+// 👇 DODAJ: DelegatingHandler dla automatycznego wysyłania tokena
+builder.Services.AddScoped<AuthenticationHeaderHandler>();
+
+builder.Services.AddScoped(sp => 
 {
-    BaseAddress = new Uri("http://localhost:5056")
+    var handler = sp.GetRequiredService<AuthenticationHeaderHandler>();
+    handler.InnerHandler = new HttpClientHandler();
+    
+    var httpClient = new HttpClient(handler)
+    {
+        BaseAddress = new Uri("http://localhost:5056")
+    };
+    return httpClient;
 });
+
 
 // Custom provider + rejestracja pod interfejsem
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
@@ -28,9 +39,12 @@ builder.Services.AddCascadingAuthenticationState();
 
 // API Services
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<CarApiService>();
-builder.Services.AddScoped<UserApiService>();
-builder.Services.AddScoped<ReservationApiService>();        
+builder.Services.AddScoped<ICarApiService, CarApiService>();
+builder.Services.AddScoped<IUserApiService, UserApiService>();
+builder.Services.AddScoped<IReservationApiService, ReservationApiService>();
+
+
+
 
 var app = builder.Build();
 

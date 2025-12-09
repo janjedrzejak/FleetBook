@@ -1,76 +1,51 @@
 ﻿@using FleetBook.Services
 @inject CustomAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">FleetBook</a>
         <div class="ms-auto d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-light" onclick="localStorage.clear(); window.location.href='/login';">
-    <i class="bi bi-box-arrow-right"></i> Wyloguj
-</button>
-
-@code {
-    private async Task ClearLocalStorage()
-    {
-        Console.WriteLine("🔍 CLEARING LOCALSTORAGE");
-        await JS.InvokeVoidAsync("localStorage.removeItem", "authToken");
-    }
-}
+            @* tu możesz później dodać email użytkownika *@
         </div>
     </div>
 </div>
 
-<!-- MENU BEZ AuthorizeView -->
+<!-- MENU -->
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Flota
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Flota
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="users">
-                <span class="bi bi-people-fill" aria-hidden="true"></span> Użytkownicy
+                <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Użytkownicy
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="reservations">
-                <span class="bi bi-calendar-check-fill" aria-hidden="true"></span> Rezerwacje
+                <span class="bi bi-calendar-check-fill-nav-menu" aria-hidden="true"></span> Rezerwacje
             </NavLink>
+        </div>
+
+        <!-- LOGOUT BUTTON NA DOLE MENU -->
+        <div class="nav-item px-3 mt-auto border-top pt-3">
+            <button class="btn btn-sm btn-outline-danger w-100" @onclick="Logout">
+                <span class="bi bi-box-arrow-right"></span> Wyloguj
+            </button>
         </div>
     </nav>
 </div>
 
-
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            Console.WriteLine("🔍 NavMenu.OnAfterRenderAsync: Initializing");
-            await AuthStateProvider.InitializeFromLocalStorageAsync();
-            await Task.Delay(200); // Więcej czasu na propagację
-            StateHasChanged();
-            Console.WriteLine("🔍 NavMenu.StateHasChanged called");
-        }
-    }
-
     private async Task Logout()
-{
-    Console.WriteLine("🔍 === LOGOUT CLICKED! ===");
-    try 
     {
         await AuthStateProvider.NotifyUserLogoutAsync();
-        Console.WriteLine("🔍 Token usunięty");
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"🔍 LOGOUT ERROR: {ex.Message}");
-    }
-    Navigation.NavigateTo("/login", forceLoad: true);
-    Console.WriteLine("🔍 Przekierowanie na login");
-}
 }

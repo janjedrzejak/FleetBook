@@ -1,13 +1,15 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Components.Authorization;
+using System.Text;
+using System.Text.Json;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace FleetBook.Services;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
     private readonly ILocalStorageService _localStorage;
+    private ClaimsPrincipal _currentUser = new(new ClaimsIdentity()); // domyślnie anonimowy
 
     public CustomAuthenticationStateProvider(ILocalStorageService localStorage)
     {
@@ -16,87 +18,98 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        // 🔹 Zwróć zawsze _currentUser (na starcie będzie niezalogowany)
+        // Zwraca aktualnego użytkownika (zbudowanego w InitializeFromLocalStorageAsync lub NotifyUserAuthenticationAsync)
         return Task.FromResult(new AuthenticationState(_currentUser));
     }
 
     public async Task InitializeFromLocalStorageAsync()
     {
-        // 🔹 Ta metoda będzie wywołana z OnAfterRenderAsync, gdzie JS interop jest dostępny!
         try
         {
             var token = await _localStorage.GetItemAsStringAsync("authToken");
-            
+            Console.WriteLine($"🔍 InitializeFromLocalStorageAsync: token = {(string.IsNullOrEmpty(token) ? "EMPTY" : token.Substring(0, 20) + "...")}");
+
             if (!string.IsNullOrEmpty(token))
             {
-                Console.WriteLine($"🔓 Token found in localStorage: {token.Substring(0, 20)}...");
-                
-                var email = await _localStorage.GetItemAsStringAsync("userEmail") ?? "admin@fleetbook.com";
-                var identity = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.Name, email),
-                    new Claim("token", token),
-                }, "jwt");
-                
+                var claims = ParseJwtClaims(token);
+                var identity = new ClaimsIdentity(claims, "jwt");
                 _currentUser = new ClaimsPrincipal(identity);
-                Console.WriteLine("✅ User restored from token");
-                
-                // 🔹 Powiadom, że stan się zmienił
-                NotifyAuthenticationStateChanged(
-                    Task.FromResult(new AuthenticationState(_currentUser)));
+
+                Console.WriteLine($"✅ InitializeFromLocalStorageAsync: claims = {_currentUser.Claims.Count()}");
+
+                NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+            }
+            else
+            {
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+                NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"⚠️  Error reading token: {ex.Message}");
+            Console.WriteLine($"⚠️ InitializeFromLocalStorageAsync error: {ex.Message}");
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
         }
     }
 
     public async Task NotifyUserAuthenticationAsync(string email, string token)
     {
-        try
-        {
-            // Zapisz token
-            await _localStorage.SetItemAsStringAsync("authToken", token);
-            Console.WriteLine($"💾 Token saved to localStorage");
+        // Zapis tokena do localStorage
+        await _localStorage.SetItemAsStringAsync("authToken", token);
+        await _localStorage.SetItemAsStringAsync("userEmail", email);
 
-            // Utwórz claims
-            var identity = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, email),
-                new Claim(ClaimTypes.Name, email),
-                new Claim("token", token),
-            }, "jwt");
+        var claims = ParseJwtClaims(token);
+        var identity = new ClaimsIdentity(claims, "jwt");
+        _currentUser = new ClaimsPrincipal(identity);
 
-            _currentUser = new ClaimsPrincipal(identity);
-            Console.WriteLine($"✅ User authenticated: {email}");
+        Console.WriteLine($"✅ NotifyUserAuthenticationAsync: IsAuthenticated = {_currentUser.Identity?.IsAuthenticated}, Claims = {_currentUser.Claims.Count()}");
 
-            NotifyAuthenticationStateChanged(
-                Task.FromResult(new AuthenticationState(_currentUser)));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error in NotifyUserAuthentication: {ex.Message}");
-        }
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
     }
 
     public async Task NotifyUserLogoutAsync()
     {
+        await _localStorage.RemoveItemAsync("authToken");
+        await _localStorage.RemoveItemAsync("userEmail");
+
+        _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_currentUser)));
+        Console.WriteLine("✅ NotifyUserLogoutAsync: user logged out");
+    }
+
+    private List<Claim> ParseJwtClaims(string token)
+    {
+        var claims = new List<Claim>();
         try
         {
-            // Usuń token
-            await _localStorage.RemoveItemAsync("authToken");
-            Console.WriteLine("🔐 Token removed from localStorage");
+            var parts = token.Split('.');
+            if (parts.Length != 3)
+            {
+                Console.WriteLine("❌ Invalid JWT format");
+                return claims;
+            }
 
-            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
-            Console.WriteLine("✅ User logged out");
+            var payload = parts[1];
+            payload = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
 
-            NotifyAuthenticationStateChanged(
-                Task.FromResult(new AuthenticationState(_currentUser)));
+            var bytes = Convert.FromBase64String(payload);
+            var json = Encoding.UTF8.GetString(bytes);
+
+            using var doc = JsonDocument.Parse(json);
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                var value = prop.Value.ToString();
+                claims.Add(new Claim(prop.Name, value));
+                Console.WriteLine($"  📌 Claim: {prop.Name} = {value}");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error in NotifyUserLogout: {ex.Message}");
+            Console.WriteLine($"❌ ParseJwtClaims error: {ex.Message}");
         }
+
+        return claims;
     }
 }

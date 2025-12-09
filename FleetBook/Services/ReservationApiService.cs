@@ -1,259 +1,105 @@
-using FleetBook.Models;
 using System.Net.Http.Json;
+using FleetBook.Models;
 
 namespace FleetBook.Services;
 
-public class ReservationApiService
+public interface IReservationApiService
+{
+    Task<IReadOnlyList<ReservationDto>> GetReservationsAsync(
+        DateTime? from = null,
+        DateTime? to = null,
+        int? carId = null,
+        int? userId = null);
+
+    Task<ReservationDto?> GetReservationByIdAsync(int id);
+
+    Task<ReservationDto> CreateReservationAsync(CreateReservationRequest request);
+
+    Task<ReservationDto> ApproveReservationAsync(int id, ApproveReservationRequest request);
+
+    Task<ReservationDto> RejectReservationAsync(int id, RejectReservationRequest request);
+
+    Task CancelReservationAsync(int id);
+
+    Task DeleteReservationAsync(int id);
+}
+
+public class ReservationApiService : IReservationApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly ILogger<ReservationApiService> _logger;
 
-    public ReservationApiService(HttpClient httpClient, ILogger<ReservationApiService> logger)
+    public ReservationApiService(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _logger = logger;
     }
 
-    // Reservations
-    public async Task<List<ReservationDto>> GetReservationsAsync()
+    public async Task<IReadOnlyList<ReservationDto>> GetReservationsAsync(
+        DateTime? from = null,
+        DateTime? to = null,
+        int? carId = null,
+        int? userId = null)
     {
-        try
-        {
-            var response = await _httpClient.GetAsync("api/reservations");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ReservationDto>>() ?? new();
-            }
-            _logger.LogError($"Error: {response.StatusCode}");
-            return new();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return new();
-        }
+        var query = new List<string>();
+
+        if (from.HasValue)
+            query.Add($"from={from.Value:O}");
+        if (to.HasValue)
+            query.Add($"to={to.Value:O}");
+        if (carId.HasValue)
+            query.Add($"carId={carId.Value}");
+        if (userId.HasValue)
+            query.Add($"userId={userId.Value}");
+
+        var queryString = query.Count > 0 ? "?" + string.Join("&", query) : string.Empty;
+
+        // Dopasuj bazowy URL do backendu (np. /api/reservations)
+        var result = await _httpClient.GetFromJsonAsync<List<ReservationDto>>(
+            $"api/reservations{queryString}");
+
+        return result ?? new List<ReservationDto>();
     }
 
     public async Task<ReservationDto?> GetReservationByIdAsync(int id)
     {
-        try
-        {
-            var response = await _httpClient.GetAsync($"api/reservations/{id}");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<ReservationDto>();
-            }
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return null;
-        }
+        return await _httpClient.GetFromJsonAsync<ReservationDto>($"api/reservations/{id}");
     }
 
-    public async Task<List<ReservationDto>> GetUserReservationsAsync(int userId)
+    public async Task<ReservationDto> CreateReservationAsync(CreateReservationRequest request)
     {
-        try
-        {
-            var response = await _httpClient.GetAsync($"api/reservations/user/{userId}");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ReservationDto>>() ?? new();
-            }
-            return new();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return new();
-        }
+        var response = await _httpClient.PostAsJsonAsync("api/reservations", request);
+        response.EnsureSuccessStatusCode();
+
+        var created = await response.Content.ReadFromJsonAsync<ReservationDto>();
+        return created ?? throw new InvalidOperationException("Brak treści odpowiedzi przy tworzeniu rezerwacji");
     }
 
-    public async Task<List<ReservationDto>> GetPendingReservationsAsync()
+    public async Task<ReservationDto> ApproveReservationAsync(int id, ApproveReservationRequest request)
     {
-        try
-        {
-            var response = await _httpClient.GetAsync("api/reservations/pending");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<ReservationDto>>() ?? new();
-            }
-            return new();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return new();
-        }
+        var response = await _httpClient.PostAsJsonAsync($"api/reservations/{id}/approve", request);
+        response.EnsureSuccessStatusCode();
+
+        var updated = await response.Content.ReadFromJsonAsync<ReservationDto>();
+        return updated ?? throw new InvalidOperationException("Brak treści odpowiedzi przy akceptacji rezerwacji");
     }
 
-    public async Task<bool> CreateReservationAsync(CreateReservationRequest request)
+    public async Task<ReservationDto> RejectReservationAsync(int id, RejectReservationRequest request)
     {
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("api/reservations", request);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
+        var response = await _httpClient.PostAsJsonAsync($"api/reservations/{id}/reject", request);
+        response.EnsureSuccessStatusCode();
+
+        var updated = await response.Content.ReadFromJsonAsync<ReservationDto>();
+        return updated ?? throw new InvalidOperationException("Brak treści odpowiedzi przy odrzuceniu rezerwacji");
     }
 
-    public async Task<bool> ApproveReservationAsync(int id, string? notatki = null)
+    public async Task CancelReservationAsync(int id)
     {
-        try
-        {
-            var request = new ApproveReservationRequest { Notatki = notatki };
-            var response = await _httpClient.PutAsJsonAsync($"api/reservations/{id}/approve", request);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
+        var response = await _httpClient.PostAsync($"api/reservations/{id}/cancel", content: null);
+        response.EnsureSuccessStatusCode();
     }
 
-    public async Task<bool> RejectReservationAsync(int id, string? powod = null)
+    public async Task DeleteReservationAsync(int id)
     {
-        try
-        {
-            var request = new RejectReservationRequest { Powod = powod };
-            var response = await _httpClient.PutAsJsonAsync($"api/reservations/{id}/reject", request);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> CancelReservationAsync(int id)
-    {
-        try
-        {
-            var response = await _httpClient.PutAsync($"api/reservations/{id}/cancel", null);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> DeleteReservationAsync(int id)
-    {
-        try
-        {
-            var response = await _httpClient.DeleteAsync($"api/reservations/{id}");
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
-    }
-
-    // Cars
-    public async Task<List<CarDto>> GetCarsAsync()
-    {
-        try
-        {
-            var response = await _httpClient.GetAsync("api/cars");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<CarDto>>() ?? new();
-            }
-            return new();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return new();
-        }
-    }
-
-    public async Task<List<CarDto>> GetAvailableCarsAsync(DateTime dataOd, DateTime dataDo)
-    {
-        try
-        {
-            var response = await _httpClient.GetAsync($"api/cars/available?dataOd={dataOd:O}&dataDo={dataDo:O}");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<CarDto>>() ?? new();
-            }
-            return new();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return new();
-        }
-    }
-
-    public async Task<CarDto?> GetCarByIdAsync(int id)
-    {
-        try
-        {
-            var response = await _httpClient.GetAsync($"api/cars/{id}");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<CarDto>();
-            }
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return null;
-        }
-    }
-
-    public async Task<bool> CreateCarAsync(CarDto car)
-    {
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync("api/cars", car);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> UpdateCarAsync(int id, CarDto car)
-    {
-        try
-        {
-            var response = await _httpClient.PutAsJsonAsync($"api/cars/{id}", car);
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> DeleteCarAsync(int id)
-    {
-        try
-        {
-            var response = await _httpClient.DeleteAsync($"api/cars/{id}");
-            return response.IsSuccessStatusCode;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Exception: {ex.Message}");
-            return false;
-        }
+        var response = await _httpClient.DeleteAsync($"api/reservations/{id}");
+        response.EnsureSuccessStatusCode();
     }
 }

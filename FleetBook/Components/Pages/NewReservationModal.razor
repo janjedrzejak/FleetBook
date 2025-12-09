@@ -1,0 +1,162 @@
+@using FleetBook.Models
+@inherits ComponentBase
+
+<div class="modal fade @(IsOpen ? "show d-block" : "d-none")" tabindex="-1" style="background-color: rgba(0,0,0,0.4);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(_editingReservation is null ? "Nowa rezerwacja" : "Edycja rezerwacji")</h5>
+                <button type="button" class="btn-close" @onclick="Close"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@_model" OnValidSubmit="HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Pojazd</label>
+                        <InputSelect class="form-control" @bind-Value="_model.CarId">
+                            <option value="">-- wybierz pojazd --</option>
+                            @foreach (var car in Cars)
+                            {
+                                <option value="@car.Id">@car.Marka @car.Model (@car.Rejestracja)</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    @if (IsAdmin)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Użytkownik</label>
+                            <InputSelect class="form-control" @bind-Value="_model.UserId">
+                                <option value="">-- wybierz użytkownika --</option>
+                                @foreach (var user in Users)
+                                {
+                                    <option value="@user.Id">@user.Imie @user.Nazwisko (@user.Email)</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Data od</label>
+                        <InputDate class="form-control" @bind-Value="_model.DataOd" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Data do</label>
+                        <InputDate class="form-control" @bind-Value="_model.DataDo" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notatki</label>
+                        <InputTextArea class="form-control" @bind-Value="_model.Notatki" />
+                    </div>
+
+                    <div class="mt-3 d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="Close">Anuluj</button>
+                        <button type="submit" class="btn btn-primary">Zapisz</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<CarDto> Cars { get; set; } = new();
+    [Parameter] public List<UserDto> Users { get; set; } = new();
+    [Parameter] public bool IsAdmin { get; set; }
+    [Parameter] public int CurrentUserId { get; set; }
+    [Parameter] public EventCallback<ReservationDto> OnSaved { get; set; }
+
+    [Inject] public IReservationApiService ReservationApi { get; set; } = default!;
+
+    private bool IsOpen { get; set; }
+    private ReservationDto? _editingReservation;
+    private ReservationFormModel _model = new();
+
+    public void Open(ReservationDto? reservation)
+    {
+        _editingReservation = reservation;
+        if (reservation is null)
+        {
+            // Tryb create
+            _model = new ReservationFormModel
+            {
+                UserId = IsAdmin ? (int?)null : CurrentUserId,
+                DataOd = DateTime.Today,
+                DataDo = DateTime.Today.AddDays(1)
+            };
+        }
+        else
+        {
+            // Tryb edit (MVP: możemy ograniczyć zakres pól)
+            _model = new ReservationFormModel
+            {
+                Id = reservation.Id,
+                CarId = reservation.CarId,
+                UserId = reservation.UserId,
+                DataOd = reservation.DataOd,
+                DataDo = reservation.DataDo,
+                Notatki = reservation.Notatki
+            };
+        }
+
+        IsOpen = true;
+        StateHasChanged();
+    }
+
+    private void Close()
+    {
+        IsOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (_model.DataDo <= _model.DataOd)
+        {
+            // Prosta walidacja
+            // Możesz dodać ValidationMessage
+            return;
+        }
+
+        if (_editingReservation is null)
+        {
+            // Create
+            var request = new CreateReservationRequest
+            {
+                CarId = _model.CarId ?? 0,
+                UserId = IsAdmin ? _model.UserId : CurrentUserId,
+                DataOd = _model.DataOd,
+                DataDo = _model.DataDo,
+                Notatki = _model.Notatki,
+                IsAdmin = IsAdmin
+            };
+
+            var created = await ReservationApi.CreateReservationAsync(request);
+            await OnSaved.InvokeAsync(created);
+        }
+        else
+        {
+            // MVP: dla edycji możesz:
+            // - albo dodać osobny endpoint PUT,
+            // - albo na razie zablokować edycję (CanEdit = false).
+            // Tu na razie tylko wypchniemy istniejącą rezerwację:
+            await OnSaved.InvokeAsync(_editingReservation);
+        }
+
+        Close();
+    }
+
+    private class ReservationFormModel
+    {
+        public int Id { get; set; }
+        public int? CarId { get; set; }
+        public int? UserId { get; set; }
+        public DateTime DataOd { get; set; }
+        public DateTime DataDo { get; set; }
+        public string Notatki { get; set; } = string.Empty;
+    }
+}

@@ -117,7 +117,7 @@ C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\s
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\scopedcss\Components\Layout\ReconnectModal.razor.rz.scp.css
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\scopedcss\bundle\FleetBook.styles.css
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\scopedcss\projectbundle\FleetBook.bundle.scp.css
-C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\e4aydhszac-{0}-xxng2hdb80-xxng2hdb80.gz
+C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\e4aydhszac-{0}-4c3ocluysr-4c3ocluysr.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\b0e33uvbea-{0}-t1cqhe9u97-t1cqhe9u97.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\1a36prev65-{0}-c2jlpeoesf-c2jlpeoesf.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\imo5saoh10-{0}-sejl45xvog-sejl45xvog.gz
@@ -165,8 +165,6 @@ C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\c
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\kfrz1p5llw-{0}-13ja33weya-13ja33weya.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\x2gl0h50sh-{0}-j8lzlu28q6-j8lzlu28q6.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\pz9nu0nmzj-{0}-u1n4jc5v46-u1n4jc5v46.gz
-C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\vvx25oxi5v-{0}-6wg8f7musi-6wg8f7musi.gz
-C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\7gi22d1yq0-{0}-6wg8f7musi-6wg8f7musi.gz
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\staticwebassets.development.json
@@ -178,3 +176,5 @@ C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\r
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\FleetBook.pdb
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\FleetBook.genruntimeconfig.cache
 C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\ref\FleetBook.dll
+C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\vvx25oxi5v-{0}-f6edw5ktid-f6edw5ktid.gz
+C:\Users\Janek\OneDrive\Dokumenty\GitHub\FleetBook\FleetBook\obj\Debug\net10.0\compressed\7gi22d1yq0-{0}-f6edw5ktid-f6edw5ktid.gz

@@ -1,15 +1,11 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<CascadingAuthenticationState>
+    <div class="page">
+        <main>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
     </div>
-    <main>
-        <div class="top-row px-4 auth">
-            <span>FleetBook</span>
-        </div>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+</CascadingAuthenticationState>

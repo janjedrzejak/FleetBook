@@ -3,81 +3,107 @@
 @using FleetBook.Models
 @using FleetBook.Services
 @rendermode InteractiveServer
-@inject UserApiService UserApiService
+@inject IUserApiService UserApiService
 @inject CustomAuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
-<div class="container mt-5">
-    <h1>👥 Zarządzanie Użytkownikami</h1>
-    <p>Administrator - Panel zarządzania użytkownikami systemu</p>
+<AuthorizeView>
+    <Authorized>
+    <div class="d-flex">
+        <div class="sidebar-left" style="width: 260px;"">
+            <NavMenu />
+        </div>
+    <div class="flex-grow-1">
+        @if (context.User.FindFirst("role")?.Value != "Admin")
+        {
+            <div class="container mt-5">
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">❌ Dostęp zabroniony!</h4>
+                    <p>Ta strona jest dostępna tylko dla administratorów.</p>
+                    <hr>
+                    <p class="mb-0"><a href="/">Powróć do strony głównej</a></p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="container mt-5">
+                <h1>👥 Zarządzanie Użytkownikami</h1>
+                <p>Administrator - Panel zarządzania użytkownikami systemu</p>
 
-    <!-- Button to add new user -->
-    <button class="btn btn-success mb-3" @onclick="OpenAddModal">
-        <i class="bi bi-plus-circle"></i> Dodaj użytkownika
-    </button>
+                <!-- Button to add new user -->
+                <button class="btn btn-success mb-3" @onclick="OpenAddModal">
+                    <i class="bi bi-plus-circle"></i> Dodaj użytkownika
+                </button>
 
-    @if (users == null)
-    {
-        <p>Ładowanie listy użytkowników...</p>
-    }
-    else if (users.Count == 0)
-    {
-        <p>Brak użytkowników w systemie.</p>
-    }
-    else
-    {
-        <table class="table table-striped mt-3">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Imię</th>
-                    <th>Nazwisko</th>
-                    <th>Email</th>
-                    <th>Tel</th>
-                    <th>Uprawniony</th>
-                    <th>Rola</th>
-                    <th>Akcje</th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach (var user in users)
-            {
-                <tr>
-                    <td>@user.Id</td>
-                    <td>@user.Imie</td>
-                    <td>@user.Nazwisko</td>
-                    <td>@user.Email</td>
-                    <td>@user.NumerTelefonu</td>
-                    <td>
-                        <span class="badge @(user.Uprawniony == 1 ? "bg-success" : "bg-warning")">
-                            @(user.Uprawniony == 1 ? "Tak" : "Nie")
-                        </span>
-                    </td>
-                    <td>
-                        @if (userRoles.ContainsKey(user.Id) && userRoles[user.Id].Count > 0)
+                @if (users == null)
+                {
+                    <p>Ładowanie listy użytkowników...</p>
+                }
+                else if (users.Count == 0)
+                {
+                    <p>Brak użytkowników w systemie.</p>
+                }
+                else
+                {
+                    <table class="table table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Imię</th>
+                                <th>Nazwisko</th>
+                                <th>Email</th>
+                                <th>Tel</th>
+                                <th>Uprawniony</th>
+                                <th>Rola</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var user in users)
                         {
-                            <span class="badge bg-info">@userRoles[user.Id][0].Name</span>
+                            <tr>
+                                <td>@user.Id</td>
+                                <td>@user.Imie</td>
+                                <td>@user.Nazwisko</td>
+                                <td>@user.Email</td>
+                                <td>@user.NumerTelefonu</td>
+                                <td>
+                                    <span class="badge @(user.Uprawniony == 1 ? "bg-success" : "bg-warning")">
+                                        @(user.Uprawniony == 1 ? "Tak" : "Nie")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (userRoles.ContainsKey(user.Id) && userRoles[user.Id].Count > 0)
+                                    {
+                                        <span class="badge bg-info">@userRoles[user.Id][0].Name</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Brak</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(user)">
+                                        Edytuj
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(user.Id)">
+                                        Usuń
+                                    </button>
+                                </td>
+                            </tr>
                         }
-                        else
-                        {
-                            <span class="badge bg-secondary">Brak</span>
-                        }
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => OpenEditModal(user)">
-                            Edytuj
-                        </button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(user.Id)">
-                            Usuń
-                        </button>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    }
-</div>
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+    </div>
+    </div>
+    </Authorized>
+</AuthorizeView>
+
 
 <!-- Add/Edit Modal -->
 <div class="modal @(showUserModal ? "show" : "")" id="userModal" tabindex="-1" style="@(showUserModal ? "display: block;" : "display: none;")">
@@ -594,4 +620,9 @@
     .btn-close:hover {
         opacity: 0.75;
     }
+
+    .sidebar-left {
+    background-image: linear-gradient(180deg, rgb(0, 0, 0) 0%, #3a0647 70%);
+    color: #fff;
+    min-height: 100vh;
 </style>
