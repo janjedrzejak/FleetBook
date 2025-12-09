@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "xJIi9FBi9wY=",
+  "dgSpecHash": "3jsFIqCT29E=",
   "success": true,
-  "projectFilePath": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook/FleetBook.csproj",
+  "projectFilePath": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook\\FleetBook.csproj",
   "expectedPackageFiles": [
-    "/Users/janjedrzejak/.nuget/packages/blazored.localstorage/4.5.0/blazored.localstorage.4.5.0.nupkg.sha512",
-    "/Users/janjedrzejak/.nuget/packages/microsoft.aspnetcore.app.internal.assets/10.0.0/microsoft.aspnetcore.app.internal.assets.10.0.0.nupkg.sha512"
+    "C:\\Users\\Janek\\.nuget\\packages\\blazored.localstorage\\4.5.0\\blazored.localstorage.4.5.0.nupkg.sha512",
+    "C:\\Users\\Janek\\.nuget\\packages\\microsoft.aspnetcore.app.internal.assets\\10.0.0\\microsoft.aspnetcore.app.internal.assets.10.0.0.nupkg.sha512"
   ],
   "logs": []
 }

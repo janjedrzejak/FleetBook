@@ -1,11 +1,11 @@
 @page "/login"
+@rendermode InteractiveServer
 @using FleetBook.Services
 @using FleetBook.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthService AuthService
 @inject NavigationManager NavigationManager
 @inject CustomAuthenticationStateProvider AuthStateProvider
-@rendermode InteractiveServer
 
 
 <div class="login-container">
@@ -153,38 +153,37 @@
     private bool isLoading = false;
 
     private async Task HandleLogin()
-{
-    isLoading = true;
-    errorMessage = "";
-
-    try
     {
-        var user = await AuthService.LoginAsync(email, password);
+        isLoading = true;
+        errorMessage = "";
 
-        if (user != null)
+        try
         {
-            // 🔹 DEBUG: sprawdź czy token się zapisał
-            var token = await AuthService.GetAccessTokenAsync();
-            Console.WriteLine($"🔍 Login: token after login = {(string.IsNullOrWhiteSpace(token) ? "EMPTY" : token.Substring(0, 20) + "...")}");
+            var user = await AuthService.LoginAsync(email, password);
 
-            AuthStateProvider.NotifyUserAuthentication(user.Email);
+            if (user != null)
+            {
+                // 🔹 DEBUG: sprawdź czy token się zapisał
+                var token = await AuthService.GetAccessTokenAsync();
+                Console.WriteLine($"🔍 Login: token after login = {(string.IsNullOrWhiteSpace(token) ? "EMPTY" : token.Substring(0, 20) + "...")}");
 
-            await Task.Delay(500);
-            NavigationManager.NavigateTo("/", forceLoad: true);
+                // 🔹 WAŻNE: Powiadom AuthStateProvider (teraz async!)
+                await AuthStateProvider.NotifyUserAuthenticationAsync(user.Email, token);
+                Console.WriteLine($"✅ Login: User notified to AuthStateProvider");
+
+                await Task.Delay(500);
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = "Logowanie nie powiodło się. Sprawdź email i hasło.";
+            }
         }
-        else
+        catch (Exception ex)
         {
-            errorMessage = "Logowanie nie powiodło się. Sprawdź email i hasło.";
+            errorMessage = $"Błąd: {ex.Message}";
         }
+
+        isLoading = false;
     }
-    catch (Exception ex)
-    {
-        errorMessage = $"Błąd: {ex.Message}";
-    }
-
-    isLoading = false;
-}
-
-
-
 }

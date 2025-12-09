@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook.API/FleetBook.API.csproj": {}
+    "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook.API\\FleetBook.API.csproj": {}
   },
   "projects": {
-    "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook.API/FleetBook.API.csproj": {
+    "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook.API\\FleetBook.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook.API/FleetBook.API.csproj",
+        "projectUniqueName": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook.API\\FleetBook.API.csproj",
         "projectName": "FleetBook.API",
-        "projectPath": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook.API/FleetBook.API.csproj",
-        "packagesPath": "/Users/janjedrzejak/.nuget/packages/",
-        "outputPath": "/Users/janjedrzejak/Documents/GitHub/FleetBook/FleetBook.API/obj/",
+        "projectPath": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook.API\\FleetBook.API.csproj",
+        "packagesPath": "C:\\Users\\Janek\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Janek\\OneDrive\\Dokumenty\\GitHub\\FleetBook\\FleetBook.API\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/janjedrzejak/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Janek\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -94,7 +94,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.100/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",

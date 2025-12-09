@@ -4,9 +4,9 @@
 @using FleetBook.Services
 @rendermode InteractiveServer
 @inject UserApiService UserApiService
+@inject CustomAuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
-
 
 <div class="container mt-5">
     <h1>👥 Zarządzanie Użytkownikami</h1>
@@ -256,33 +256,43 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine("🔍 Users.OnInitializedAsync started");
-        
-        var authState = await AuthStateTask;
-        
-        if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
+        if (firstRender)
         {
-            Console.WriteLine("🔍 User not authenticated, redirecting to /login");
-            Navigation.NavigateTo("/login", forceLoad: true);
-            return;
-        }
-
-        Console.WriteLine("🔍 Loading users and roles");
-        users = await UserApiService.GetUsersAsync();
-        availableRoles = await UserApiService.GetAllRolesAsync();
-        
-        // Load roles for each user
-        if (users != null)
-        {
-            foreach (var user in users)
+            // 🔹 KROK 1: Na starcie przywróć token z localStorage
+            Console.WriteLine("🔍 Users.OnAfterRenderAsync: Initializing authentication from localStorage");
+            await AuthStateProvider.InitializeFromLocalStorageAsync();
+            
+            // 🔹 KROK 2: Czekaj aż stan się propaguje
+            await Task.Delay(100);
+            
+            // 🔹 KROK 3: Sprawdź autentykację
+            var authState = await AuthStateTask;
+            
+            if (authState.User.Identity is null || !authState.User.Identity.IsAuthenticated)
             {
-                userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                Console.WriteLine("🔍 User not authenticated, redirecting to /login");
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
             }
+
+            Console.WriteLine("🔍 Loading users and roles");
+            users = await UserApiService.GetUsersAsync();
+            availableRoles = await UserApiService.GetAllRolesAsync();
+            
+            // Load roles for each user
+            if (users != null)
+            {
+                foreach (var user in users)
+                {
+                    userRoles[user.Id] = await UserApiService.GetUserRolesAsync(user.Id);
+                }
+            }
+            
+            Console.WriteLine($"🔍 Got {users?.Count ?? 0} users and {availableRoles?.Count ?? 0} roles");
+            StateHasChanged();
         }
-        
-        Console.WriteLine($"🔍 Got {users?.Count ?? 0} users and {availableRoles?.Count ?? 0} roles");
     }
 
     private async Task OpenAddModal()

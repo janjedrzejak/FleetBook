@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Authorization;        
 using FleetBook.Services;
 using FleetBook.Components;
 using Blazored.LocalStorage;
@@ -24,12 +24,13 @@ builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
 
 // Autoryzacja + stan uwierzytelnienia jako kaskada
 builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
 
 // API Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CarApiService>();
 builder.Services.AddScoped<UserApiService>();
-builder.Services.AddScoped<ReservationApiService>();
+builder.Services.AddScoped<ReservationApiService>();        
 
 var app = builder.Build();
 

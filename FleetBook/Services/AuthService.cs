@@ -1,5 +1,6 @@
 using FleetBook.Models;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http.Json;
 
 namespace FleetBook.Services;
@@ -8,15 +9,17 @@ public class AuthService
 {
     private readonly HttpClient _httpClient;
     private readonly ILocalStorageService _localStorage;
+    private readonly CustomAuthenticationStateProvider _authStateProvider;
     
     // 🔹 Przechowuj token w pamięci, żeby był zawsze dostępny
     private static string? _cachedAccessToken = null;
     private static string? _cachedRefreshToken = null;
 
-    public AuthService(HttpClient httpClient, ILocalStorageService localStorage)
+    public AuthService(HttpClient httpClient, ILocalStorageService localStorage, AuthenticationStateProvider authStateProvider)
     {
         _httpClient = httpClient;
         _localStorage = localStorage;
+        _authStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
     }
 
     public async Task<UserDto?> LoginAsync(string email, string password)
@@ -54,7 +57,11 @@ public class AuthService
                 _cachedAccessToken = result.AccessToken;
                 _cachedRefreshToken = result.RefreshToken;
                 
-                Console.WriteLine($"🔍 AuthService.LoginAsync: Token saved to cache, _cachedAccessToken length = {_cachedAccessToken?.Length}");
+                Console.WriteLine($"🔍 AuthService.LoginAsync: Token saved to cache");
+
+                // 🔹 WAŻNE: Powiadom AuthenticationStateProvider o zalogowaniu!
+                await _authStateProvider.NotifyUserAuthenticationAsync(email, result.AccessToken);
+                Console.WriteLine($"✅ AuthService.LoginAsync: User notified to AuthenticationStateProvider");
             }
 
             // Konwertuj User (z backendu) na UserDto (frontend model)
@@ -113,5 +120,9 @@ public class AuthService
         
         await _localStorage.RemoveItemAsync("accessToken");
         await _localStorage.RemoveItemAsync("refreshToken");
+
+        // 🔹 Powiadom AuthenticationStateProvider o wylogowaniu
+        await _authStateProvider.NotifyUserLogoutAsync();
+        Console.WriteLine("✅ AuthService.LogoutAsync: User notified to AuthenticationStateProvider");
     }
 }
